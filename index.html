@@ -672,9 +672,7 @@
                 localStorage.setItem('passwordsConfig', JSON.stringify(passwordsConfig));
             }, [passwordsConfig]);
 
-            const [currentUserRole, setCurrentUserRole] = useState(() => {
-                return localStorage.getItem('currentUserRole') || null;
-            });
+            const [currentUserRole, setCurrentUserRole] = useState(null);
 
             const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
             const [loginInputRole, setLoginInputRole] = useState('operator');
@@ -692,19 +690,19 @@
 
                 if (inputPin === passwordsConfig.admin) {
                     setCurrentUserRole('admin');
-                    localStorage.setItem('currentUserRole', 'admin');
+                    
                     setShowWelcome(false);
                     setLoginInputPin('');
                     setShowLoginModal(false);
                 } else if (inputPin === passwordsConfig.operator) {
                     setCurrentUserRole('operator');
-                    localStorage.setItem('currentUserRole', 'operator');
+                    
                     setShowWelcome(false);
                     setLoginInputPin('');
                     setShowLoginModal(false);
                 } else if (inputPin === passwordsConfig.viewer || inputPin === '') {
                     setCurrentUserRole('viewer');
-                    localStorage.setItem('currentUserRole', 'viewer');
+                    
                     setShowWelcome(false);
                     setLoginInputPin('');
                     setShowLoginModal(false);
@@ -715,7 +713,7 @@
 
             const handleLogout = () => {
                 setCurrentUserRole(null);
-                localStorage.removeItem('currentUserRole');
+                
             };
 
             const handleSaveNewPasswords = (e) => {
@@ -4180,7 +4178,7 @@
                                     type="button"
                                     onClick={() => {
                                         setCurrentUserRole('viewer');
-                                        localStorage.setItem('currentUserRole', 'viewer');
+                                        
                                         setShowWelcome(false);
                                         setShowLoginModal(false);
                                     }}
