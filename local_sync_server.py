@@ -159,7 +159,7 @@ def main():
     db_filename = os.path.basename(DB_FILE)
     print("==================================================================")
     print("      🚀 HR ADMIN SYSTEM - LOCAL LIVE SYNC SERVER")
-    print("      Basra Oil Company - Cooling & Gas Isolation Station")
+    print("      Basra Oil Company - Central Cooling & Nahr Bin Umar Degassing Station")
     print("==================================================================")
     print(f"  • Master PC URL:      http://localhost:{PORT}")
     print(f"  • Client Devices URL: http://{local_ip}:{PORT}")
