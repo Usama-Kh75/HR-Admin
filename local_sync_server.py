@@ -157,15 +157,16 @@ class LocalSyncHTTPHandler(http.server.SimpleHTTPRequestHandler):
 def main():
     local_ip = get_local_ip()
     print("==================================================================")
-    print("      🚀 HR ADMIN - LOCAL LIVE SYNC SERVER (سيرفر المزامنة)")
+    print("      🚀 HR ADMIN SYSTEM - LOCAL LIVE SYNC SERVER")
+    print("      Basra Oil Company - Cooling & Gas Isolation Station")
     print("==================================================================")
-    print(f"  • Master PC (الحاسبة الرئيسية):  http://localhost:{PORT}")
-    print(f"  • Client Devices (أجهزة الشعبة): http://{local_ip}:{PORT}")
+    print(f"  • Master PC URL:      http://localhost:{PORT}")
+    print(f"  • Client Devices URL: http://{local_ip}:{PORT}")
     print("------------------------------------------------------------------")
-    print(f"  • Database File (قاعدة البيانات): {DB_FILE}")
+    print(f"  • Database File Path: {DB_FILE}")
     print("==================================================================")
-    print("  STATUS: SERVER IS ACTIVE AND RUNNING PROPERLY ✅")
-    print("  (أبقِ هذه النافذة مفتوحة أثناء ساعات الدوام بالشعبة)")
+    print("  STATUS: SERVER IS ACTIVE & SYNCING IN REAL-TIME ✅")
+    print("  (Keep this console window open during working hours)")
     print("==================================================================")
 
     socketserver.TCPServer.allow_reuse_address = True
@@ -173,7 +174,7 @@ def main():
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
-            print("\nتم إيقاف السيرفر بنجاح.")
+            print("\nServer stopped successfully.")
 
 if __name__ == '__main__':
     main()
