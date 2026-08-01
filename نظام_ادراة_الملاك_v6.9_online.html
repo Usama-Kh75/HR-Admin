@@ -3907,13 +3907,7 @@
                                     {/* زر إغلاق بارز */}
                                     <div className="mt-4 animate-fadeInUp-delay1">
                                         <button 
-                                            onClick={() => {
-                                                if (!currentUserRole) {
-                                                    setShowLoginModal(true);
-                                                } else {
-                                                    setShowWelcome(false);
-                                                }
-                                            }}
+                                            onClick={() => setShowLoginModal(true)}
                                             className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-bold text-lg transition-all transform hover:scale-105 shadow-xl border-2 border-white border-opacity-30">
                                             ✓ ابدأ العمل الآن
                                         </button>
@@ -4131,7 +4125,7 @@
 
                                 
             {/* نافذة تسجيل الدخول للنظام بالتعرف التلقائي الذكي على كلمة المرور */}
-            {(showLoginModal || !currentUserRole) && (
+            {showLoginModal && (
                 <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-fadeInUp">
                         <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 p-6 text-white text-center relative">
