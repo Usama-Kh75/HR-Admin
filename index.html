@@ -4135,7 +4135,7 @@
 
                                 
             
-            {/* نافذة معاينة وبطاقة ملف المنتسب الفاخرة قبل الطباعة مع خيارات التخصيص والإخفاء والإظهار */}
+            {/* نافذة معاينة وبطاقة ملف المنتسب الفاخرة قبل الطباعة مع خيارات التخصيص والإخفاء والإظهار التلقائي التنسيق */}
             {selectedEmployeeCard && (
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 print:p-0 print:bg-white print:static">
                     <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-fadeInUp print:shadow-none print:border-none print:max-w-none print:w-full print:max-h-none">
@@ -4171,20 +4171,20 @@
                         </div>
 
                         {/* Card Details Grid */}
-                        <div className="p-5 sm:p-6 space-y-5 text-slate-800 text-xs flex-1 overflow-y-auto scrollbar-thin">
-                            {/* شريط تخصيص الحقول وإظهارها/إخفائها */}
+                        <div className="p-5 sm:p-6 space-y-4 text-slate-800 text-xs flex-1 overflow-y-auto scrollbar-thin">
+                            {/* شريط تخصيص الحقول وإظهارها/إخفائها مع زر التطبيق */}
                             {showFieldCustomizer && (
-                                <div className="p-4 bg-slate-100 rounded-2xl border border-slate-300 space-y-2 animate-fadeIn print:hidden">
+                                <div className="p-4 bg-slate-100 rounded-2xl border border-slate-300 space-y-3 animate-fadeIn print:hidden">
                                     <div className="text-xs font-black text-slate-800 flex justify-between items-center">
-                                        <span>⚙️ حدد الحقول التي تريد إظهارها في البطاقة والطباعة:</span>
+                                        <span>⚙️ حدد الحقول المطلوبة فقط لإظهارها وتقليص حجم البطاقة:</span>
                                         <button 
                                             onClick={() => setCardFieldsVisibility({ mobile: true, jobNumber: true, workType: true, education: true, bloodType: true, safetySizes: true })}
                                             className="text-[11px] text-blue-600 font-bold hover:underline"
                                         >
-                                            إظهار جميع الحقول
+                                            تحديد جميع الحقول
                                         </button>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-slate-700 font-bold">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-slate-700 font-bold">
                                         <label className="flex items-center gap-1.5 cursor-pointer bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">
                                             <input type="checkbox" checked={cardFieldsVisibility.mobile} onChange={(e) => setCardFieldsVisibility({...cardFieldsVisibility, mobile: e.target.checked})} className="rounded text-blue-600" />
                                             <span>📱 رقم الهاتف النقال</span>
@@ -4210,54 +4210,82 @@
                                             <span>👕 قياس البدلة والحذاء</span>
                                         </label>
                                     </div>
+                                    <div className="flex justify-end pt-1">
+                                        <button
+                                            onClick={() => setShowFieldCustomizer(false)}
+                                            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow transition flex items-center gap-1"
+                                        >
+                                            <span>💾</span>
+                                            <span>تطبيق وعرض الحقول المختارة فقط</span>
+                                        </button>
+                                    </div>
                                 </div>
                             )}
 
-                            {/* المعلومات الأساسية ورقم الهاتف */}
-                            {(cardFieldsVisibility.mobile || cardFieldsVisibility.jobNumber) && (
-                                <div className="grid grid-cols-2 gap-3">
-                                    {cardFieldsVisibility.mobile && (
-                                        <div className="p-3.5 bg-amber-50 rounded-2xl border border-amber-200">
+                            {/* شبكة الحقول النشطة الذكية المتناسقة */}
+                            {(() => {
+                                const activeItems = [];
+                                if (cardFieldsVisibility.mobile) {
+                                    activeItems.push(
+                                        <div key="mobile" className="p-3.5 bg-amber-50 rounded-2xl border border-amber-200">
                                             <div className="text-[11px] text-amber-700 font-bold mb-1">📱 رقم الهاتف النقال:</div>
                                             <div className="text-sm font-mono font-black text-amber-950 text-right">
                                                 {selectedEmployeeCard.mobile || selectedEmployeeCard.phone || 'غير مسجل'}
                                             </div>
                                         </div>
-                                    )}
-                                    {cardFieldsVisibility.jobNumber && (
-                                        <div className="p-3.5 bg-blue-50 rounded-2xl border border-blue-200">
+                                    );
+                                }
+                                if (cardFieldsVisibility.jobNumber) {
+                                    activeItems.push(
+                                        <div key="jobNo" className="p-3.5 bg-blue-50 rounded-2xl border border-blue-200">
                                             <div className="text-[11px] text-blue-700 font-bold mb-1">🆔 الرقم الوظيفي / السجل:</div>
                                             <div className="text-sm font-mono font-black text-blue-950">
                                                 {selectedEmployeeCard.jobNumber || 'غير مسجل'}
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* تفاصيل طبيعة العمل والتحصيل العلمي وفصيلة الدم */}
-                            {(cardFieldsVisibility.workType || cardFieldsVisibility.education || cardFieldsVisibility.bloodType) && (
-                                <div className="grid grid-cols-3 gap-3">
-                                    {cardFieldsVisibility.workType && (
-                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                                    );
+                                }
+                                if (cardFieldsVisibility.workType) {
+                                    activeItems.push(
+                                        <div key="wt" className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                                             <div className="text-[11px] text-slate-500 font-bold mb-0.5">⏰ طبيعة العمل:</div>
                                             <div className="font-bold text-slate-800">{selectedEmployeeCard.workType || 'صباحي'}</div>
                                         </div>
-                                    )}
-                                    {cardFieldsVisibility.education && (
-                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                                    );
+                                }
+                                if (cardFieldsVisibility.education) {
+                                    activeItems.push(
+                                        <div key="edu" className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                                             <div className="text-[11px] text-slate-500 font-bold mb-0.5">🎓 التحصيل الدراسي:</div>
                                             <div className="font-bold text-slate-800">{selectedEmployeeCard.education || 'غير محدد'}</div>
                                         </div>
-                                    )}
-                                    {cardFieldsVisibility.bloodType && (
-                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                                    );
+                                }
+                                if (cardFieldsVisibility.bloodType) {
+                                    activeItems.push(
+                                        <div key="blood" className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                                             <div className="text-[11px] text-slate-500 font-bold mb-0.5">🩸 فصيلة الدم:</div>
                                             <div className="font-bold text-red-600 font-mono">{selectedEmployeeCard.bloodType || 'غير محدد'}</div>
                                         </div>
-                                    )}
-                                </div>
-                            )}
+                                    );
+                                }
+
+                                if (activeItems.length === 0 && !cardFieldsVisibility.safetySizes) {
+                                    return (
+                                        <div className="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-center text-slate-500 font-bold">
+                                            ⚠️ يرجى تحديد حقل واحد على الأقل من شريط التخصيص بالأعلى لإظهاره بالبطاقة.
+                                        </div>
+                                    );
+                                }
+
+                                const gridCols = activeItems.length === 1 ? 'grid-cols-1' : (activeItems.length === 2 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3');
+
+                                return (
+                                    <div className={`grid ${gridCols} gap-3`}>
+                                        {activeItems}
+                                    </div>
+                                );
+                            })()}
 
                             {/* قياسات السلامة والبدلة الموحدة */}
                             {cardFieldsVisibility.safetySizes && (
@@ -4287,7 +4315,7 @@
                                     title="تحديد الحقول التي ترغب بإظهارها أو إخفائها"
                                 >
                                     <span>⚙️</span>
-                                    <span>{showFieldCustomizer ? 'إغلاق شريط التخصيص' : 'تخصيص الحقول المعروضة'}</span>
+                                    <span>{showFieldCustomizer ? 'إخفاء لوحة التحديد' : 'تخصيص وتنسيق الحقول'}</span>
                                 </button>
                                 <div className="flex gap-2">
                                     <button
