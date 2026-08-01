@@ -4871,6 +4871,7 @@
                                                                     <th className="px-3 py-2.5 text-right border border-teal-500">الاسم</th>
                                                                     <th className="px-3 py-2.5 text-right border border-teal-500">الرقم الوظيفي</th>
                                                                     <th className="px-3 py-2.5 text-right border border-teal-500">العنوان الوظيفي</th>
+                                                                    <th className="px-3 py-2.5 text-right border border-teal-500">رقم الهاتف النقال</th>
                                                                     {isEduSearch && <>
                                                                         <th className="px-3 py-2.5 text-right border border-teal-500">سنة التخرج</th>
                                                                         <th className="px-3 py-2.5 text-right border border-teal-500">الاختصاص</th>
@@ -4895,8 +4896,20 @@
                                                                                 )}
                                                                             </div>
                                                                         </td>
-                                                                        <td className="px-3 py-2 border border-gray-200 text-gray-600">{s.jobNumber}</td>
-                                                                        <td className="px-3 py-2 border border-gray-200 text-gray-700">{s.jobTitle}</td>
+                                                                        <td className="px-3 py-2 border border-gray-200 font-mono text-xs text-blue-900 font-bold">{s.jobNumber}</td>
+                                                                        <td className="px-3 py-2 border border-gray-200 text-xs text-gray-700 font-bold">{s.jobTitle}</td>
+                                                                        <td className="px-3 py-2 border border-gray-200 text-xs font-mono font-bold text-amber-800">
+                                                                            <div className="flex items-center justify-between gap-1">
+                                                                                <span dir="ltr">{s.mobile || s.phone ? `📱 ${s.mobile || s.phone}` : '-'}</span>
+                                                                                <button 
+                                                                                    onClick={() => setSelectedEmployeeCard(s)}
+                                                                                    className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-[11px] font-sans font-bold transition shadow-xs"
+                                                                                    title="معاينة بطاقة المنتسب الكاملة"
+                                                                                >
+                                                                                    📇 بطاقة
+                                                                                </button>
+                                                                            </div>
+                                                                        </td>
                                                                         {isEduSearch && <>
                                                                             <td className="px-3 py-2 border border-gray-200 text-center text-teal-700 font-bold">{s.graduationYear||'—'}</td>
                                                                             <td className="px-3 py-2 border border-gray-200 text-gray-600">{s.specialization||'—'}</td>
@@ -5982,7 +5995,7 @@
                                                                     'البريد الإلكتروني': s.email || ''
                                                                 }));
                                                                 setPreviewData(exportData);
-                                                                setVisiblePreviewColumns(['الرقم الوظيفي', 'العنوان الوظيفي']);
+                                                                setVisiblePreviewColumns(['الرقم الوظيفي', 'العنوان الوظيفي', 'رقم الهاتف النقال']);
                                                                 setShowPreview(true);
                                                             }}
                                                             className="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg px-6 py-3 font-bold transition backdrop-blur-sm"
