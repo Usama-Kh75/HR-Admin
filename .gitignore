@@ -1,0 +1,5 @@
+# Git ignore rules for HR Admin project
+scratch/
+*.log
+*.tmp
+__pycache__/
