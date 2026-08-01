@@ -2969,6 +2969,11 @@
             
             const deleteEmployee = () => {
                 if (!editingEmployee) return;
+                const adminPin = prompt('🔐 يتطلب حذف الموظف إدخال الرمز السري للإداري:');
+                if (adminPin !== '1975') {
+                    alert('❌ الرمز السري غير صحيح! تم إلغاء عملية الحذف للحماية.');
+                    return;
+                }
                 
                 // تأكيد مزدوج للحذف
                 const firstName = editingEmployee.name.split(' ')[0];
@@ -3115,6 +3120,11 @@
             };
             
             const clearAllData = () => {
+                const adminPin = prompt('🔐 يتطلب مسح جميع البيانات إدخال الرمز السري للإداري:');
+                if (adminPin !== '1975') {
+                    alert('❌ الرمز السري غير صحيح! تم إلغاء العملية للحماية.');
+                    return;
+                }
                 if (confirm('⚠️ هل أنت متأكد من مسح جميع البيانات؟\n\nسيتم حذف جميع الموظفين والعودة للنظام الفارغ.')) {
                     setStaff([]);
                     setView('dashboard');
@@ -6293,6 +6303,11 @@
                                                                     {view === 'all' && (
                                                                         <button
                                                                             onClick={() => {
+                                                                                const adminPin = prompt('🔐 يتطلب حذف الموظف إدخال الرمز السري للإداري:');
+                                                                                if (adminPin !== '1975') {
+                                                                                    alert('❌ الرمز السري غير صحيح! تم إلغاء عملية الحذف للحماية.');
+                                                                                    return;
+                                                                                }
                                                                                 const firstName = s.name.split(' ')[0];
                                                                                 if (confirm(`⚠️ هل أنت متأكد من حذف الموظف؟\n\nالموظف: ${s.name}\nالرقم الوظيفي: ${s.jobNumber}\n\n⚠️ هذه العملية لا يمكن التراجع عنها!`)) {
                                                                                     const userInput = prompt(`⚠️⚠️ تأكيد نهائي ⚠️⚠️\n\nأنت على وشك حذف: ${s.name}\n\nاكتب اسم الموظف الأول (${firstName}) للتأكيد:`);
