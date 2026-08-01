@@ -5,6 +5,14 @@ import os
 import socket
 import threading
 import time
+import sys
+
+# Ensure UTF-8 output on Windows terminal
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 PORT = 8000
 DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'hr_system_database.json')
@@ -149,15 +157,15 @@ class LocalSyncHTTPHandler(http.server.SimpleHTTPRequestHandler):
 def main():
     local_ip = get_local_ip()
     print("==================================================================")
-    print("      🚀 سيرفر المزامنة السحابية والمحلية لنظام إدارة الملاك      ")
+    print("      🚀 HR ADMIN - LOCAL LIVE SYNC SERVER (سيرفر المزامنة)")
     print("==================================================================")
-    print(f"  • الحاسبة الرئيسية (Master PC):  http://localhost:{PORT}")
-    print(f"  • رابط أجهزة الشعبة (Clients):  http://{local_ip}:{PORT}")
+    print(f"  • Master PC (الحاسبة الرئيسية):  http://localhost:{PORT}")
+    print(f"  • Client Devices (أجهزة الشعبة): http://{local_ip}:{PORT}")
     print("------------------------------------------------------------------")
-    print(f"  • قاعدة البيانات الحية:         {DB_FILE}")
+    print(f"  • Database File (قاعدة البيانات): {DB_FILE}")
     print("==================================================================")
-    print("  ملاحظة: أبقِ هذه النافذة السوداء مفتوحة أثناء ساعات الدوام بالشعبة.")
-    print("  لإيقاف السيرفر: اغلق النافذة مباشرة.")
+    print("  STATUS: SERVER IS ACTIVE AND RUNNING PROPERLY ✅")
+    print("  (أبقِ هذه النافذة مفتوحة أثناء ساعات الدوام بالشعبة)")
     print("==================================================================")
 
     socketserver.TCPServer.allow_reuse_address = True
