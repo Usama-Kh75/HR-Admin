@@ -4285,7 +4285,7 @@
                                                             </button>
 
                                                             {showUnitDropdown && (
-                                                                <div className="absolute z-50 mt-1 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl p-2.5 space-y-1.5 text-xs animate-fadeInUp">
+                                                                <div className="absolute z-50 mt-1 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl p-2.5 text-xs animate-fadeInUp max-h-56 overflow-y-auto space-y-1.5 scrollbar-thin">
                                                                     <div className="flex justify-between items-center pb-2 border-b border-slate-100 mb-1">
                                                                         <span className="text-[11px] font-bold text-slate-600">اختر الوحدات المطلوبة:</span>
                                                                         {unifiedFilters.selectedUnits && unifiedFilters.selectedUnits.length > 0 && (
