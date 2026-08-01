@@ -3944,29 +3944,21 @@
                                 </p>
                             </div>
                             
-                            <div 
-                                onClick={() => setShowSyncModal(true)}
-                                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border cursor-pointer transition shadow-md flex-shrink-0 ${
-                                    syncStatus.connected 
-                                        ? 'bg-emerald-950/70 border-emerald-400/40 text-emerald-200 hover:bg-emerald-900/80' 
-                                        : 'bg-amber-950/70 border-amber-400/30 text-amber-200 hover:bg-amber-900/80'
-                                }`}
-                                title="اضغط لعرض تفاصيل المزامنة ورابط أجهزة الشعبة"
-                            >
-                                <span className="relative flex h-2.5 w-2.5">
-                                    {syncStatus.connected ? (
-                                        <>
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                                        </>
-                                    ) : (
-                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-                                    )}
-                                </span>
-                                <span className="text-xs font-bold">
-                                    {syncStatus.connected ? `🟢 السيرفر المحلي نشط (${syncStatus.ip || 'Local'})` : '🟡 أوفلاين محلي'}
-                                </span>
-                            </div>
+                            {syncStatus.connected && (
+                                <div 
+                                    onClick={() => setShowSyncModal(true)}
+                                    className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border cursor-pointer transition shadow-md flex-shrink-0 bg-emerald-950/70 border-emerald-400/40 text-emerald-200 hover:bg-emerald-900/80"
+                                    title="اضغط لعرض تفاصيل المزامنة ورابط أجهزة الشعبة"
+                                >
+                                    <span className="relative flex h-2.5 w-2.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                    </span>
+                                    <span className="text-xs font-bold">
+                                        🟢 السيرفر المحلي نشط ({syncStatus.ip || 'Local'})
+                                    </span>
+                                </div>
+                            )}
 
 
                         </div>
