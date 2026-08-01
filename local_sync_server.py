@@ -156,6 +156,7 @@ class LocalSyncHTTPHandler(http.server.SimpleHTTPRequestHandler):
 
 def main():
     local_ip = get_local_ip()
+    db_filename = os.path.basename(DB_FILE)
     print("==================================================================")
     print("      🚀 HR ADMIN SYSTEM - LOCAL LIVE SYNC SERVER")
     print("      Basra Oil Company - Cooling & Gas Isolation Station")
@@ -163,7 +164,7 @@ def main():
     print(f"  • Master PC URL:      http://localhost:{PORT}")
     print(f"  • Client Devices URL: http://{local_ip}:{PORT}")
     print("------------------------------------------------------------------")
-    print(f"  • Database File Path: {DB_FILE}")
+    print(f"  • Database File Name: {db_filename} (Auto-Saved)")
     print("==================================================================")
     print("  STATUS: SERVER IS ACTIVE & SYNCING IN REAL-TIME ✅")
     print("  (Keep this console window open during working hours)")
