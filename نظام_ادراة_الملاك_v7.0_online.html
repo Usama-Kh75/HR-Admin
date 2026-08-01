@@ -4213,7 +4213,9 @@
                                         <div key="mobile" className="p-3.5 bg-amber-50 rounded-2xl border border-amber-200">
                                             <div className="text-[11px] text-amber-700 font-bold mb-1">📱 رقم الهاتف النقال:</div>
                                             <div className="text-sm font-mono font-black text-amber-950 text-right">
-                                                {formatMobileNumber(selectedEmployeeCard.mobile || selectedEmployeeCard.phone)}
+                                                <span dir="ltr" className="inline-block dir-ltr">
+                                                    {formatMobileNumber(selectedEmployeeCard.mobile || selectedEmployeeCard.phone)}
+                                                </span>
                                             </div>
                                         </div>
                                     );
@@ -4972,7 +4974,7 @@
                                                                         <td className="px-3 py-2 border border-gray-200 text-xs text-gray-700 font-bold">{s.jobTitle}</td>
                                                                         <td className="px-3 py-2 border border-gray-200 text-xs font-mono font-bold text-amber-800">
                                                                             <div className="flex items-center justify-between gap-1">
-                                                                                <span dir="ltr">{s.mobile || s.phone ? `📱 ${formatMobileNumber(s.mobile || s.phone)}` : '-'}</span>
+                                                                                <span dir="ltr" className="inline-block dir-ltr">{s.mobile || s.phone ? `📱 ${formatMobileNumber(s.mobile || s.phone)}` : '-'}</span>
                                                                                 <button 
                                                                                     onClick={() => setSelectedEmployeeCard(s)}
                                                                                     className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-[11px] font-sans font-bold transition shadow-xs"
