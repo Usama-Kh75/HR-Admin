@@ -672,7 +672,7 @@
                 localStorage.setItem('passwordsConfig', JSON.stringify(passwordsConfig));
             }, [passwordsConfig]);
 
-            const [currentUserRole, setCurrentUserRole] = useState(null);
+            const [currentUserRole, setCurrentUserRole] = useState('admin');
 
             const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
             const [loginInputRole, setLoginInputRole] = useState('operator');
@@ -3917,7 +3917,7 @@
                                     {/* زر إغلاق بارز */}
                                     <div className="mt-4 animate-fadeInUp-delay1">
                                         <button 
-                                            onClick={() => setShowLoginModal(true)}
+                                            onClick={() => setShowWelcome(false)}
                                             className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-bold text-lg transition-all transform hover:scale-105 shadow-xl border-2 border-white border-opacity-30">
                                             ✓ ابدأ العمل الآن
                                         </button>
