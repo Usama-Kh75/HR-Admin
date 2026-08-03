@@ -2469,8 +2469,20 @@
                             let incomingList = [];
                             if (Array.isArray(data)) {
                                 incomingList = data;
-                            } else if (data && Array.isArray(data.staff)) {
-                                incomingList = data.staff;
+                            } else if (data && (Array.isArray(data.staff) || Array.isArray(data.staffData))) {
+                                incomingList = data.staff || data.staffData;
+                                if (data.officialHolidaysList && Array.isArray(data.officialHolidaysList)) {
+                                    setOfficialHolidays(data.officialHolidaysList);
+                                    safeStorage.setItem('officialHolidaysList', JSON.stringify(data.officialHolidaysList));
+                                }
+                                if (data.hourlyLeaveRecords) {
+                                    setHourlyLeaveRecords(data.hourlyLeaveRecords);
+                                    safeStorage.setItem('hourlyLeaveRecords', JSON.stringify(data.hourlyLeaveRecords));
+                                }
+                                if (data.overtimeHoursRecords) {
+                                    setOvertimeHoursRecords(data.overtimeHoursRecords);
+                                    safeStorage.setItem('overtimeHoursRecords', JSON.stringify(data.overtimeHoursRecords));
+                                }
                                 if (data.dailyStatusOverrides) {
                                     setDailyStatusOverrides(data.dailyStatusOverrides);
                                     safeStorage.setItem('dailyStatusOverrides', JSON.stringify(data.dailyStatusOverrides));
@@ -2486,6 +2498,10 @@
                                 if (data.twoShiftAnchorSquad) {
                                     setTwoShiftAnchorSquad(data.twoShiftAnchorSquad);
                                     safeStorage.setItem('twoShiftAnchorSquad', data.twoShiftAnchorSquad);
+                                }
+                                if (data.dataEntryOperator) {
+                                    setDataEntryOperator(data.dataEntryOperator);
+                                    safeStorage.setItem('dataEntryOperator', data.dataEntryOperator);
                                 }
                             } else {
                                 throw new Error('تنسيق ملف النسخة الاحتياطية غير مدعوم');
@@ -2857,10 +2873,16 @@
                         version: 'v7.0 Beta',
                         exportDate: new Date().toISOString(),
                         staff: staff,
+                        staffData: staff,
+                        officialHolidaysList: officialHolidays,
+                        hourlyLeaveRecords: hourlyLeaveRecords,
+                        overtimeHoursRecords: overtimeHoursRecords,
                         dailyStatusOverrides: dailyStatusOverrides,
                         shiftAnchorDate: anchorDate,
                         threeShiftAnchorSquad: threeShiftAnchorSquad,
-                        twoShiftAnchorSquad: twoShiftAnchorSquad
+                        twoShiftAnchorSquad: twoShiftAnchorSquad,
+                        dataEntryOperator: dataEntryOperator,
+                        overtimeSelectedIds: overtimeIds
                     };
                     const dataStr = JSON.stringify(backupData, null, 2);
                     const dataBlob = new Blob([dataStr], {type: 'application/json'});
