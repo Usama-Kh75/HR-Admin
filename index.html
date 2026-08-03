@@ -412,7 +412,7 @@
                 return str.includes('أموم') || str.includes('اموم') || str.includes('طويل');
             };
             const [staff, setStaff] = useState(() => {
-                const saved = localStorage.getItem('staffData');
+                const saved = safeStorage.getItem('staffData');
                 let parsed = saved ? JSON.parse(saved) : INITIAL_DATA;
                 // إصلاح تلقائي لمعالجة المعرّفات المكررة أو المفقودة لتفادي مشاكل Reconciler في React
                 if (parsed && parsed.length > 0) {
@@ -430,7 +430,7 @@
                             ...emp,
                             id: 'emp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + index
                         }));
-                        localStorage.setItem('staffData', JSON.stringify(parsed));
+                        safeStorage.setItem('staffData', JSON.stringify(parsed));
                     }
                 }
                 return parsed;
@@ -439,7 +439,7 @@
             // حفظ تلقائي عند تغيير البيانات
             React.useEffect(() => {
                 if (staff.length > 0) {
-                    localStorage.setItem('staffData', JSON.stringify(staff));
+                    safeStorage.setItem('staffData', JSON.stringify(staff));
                 }
             }, [staff]);
             const [view, setView] = useState('dashboard');
@@ -447,7 +447,7 @@
             const [selectedSafetyIds, setSelectedSafetyIds] = useState([]);
             const [bulkSafetyDate, setBulkSafetyDate] = useState('');
             const [overtimeIds, setOvertimeIds] = useState(() => {
-                const saved = localStorage.getItem('overtimeSelectedIds');
+                const saved = safeStorage.getItem('overtimeSelectedIds');
                 return saved ? JSON.parse(saved) : [];
             });
             const [previewTitle, setPreviewTitle] = useState('');
@@ -462,11 +462,11 @@
             
 
             const [officialHolidays, setOfficialHolidays] = useState(() => {
-                const saved = localStorage.getItem('officialHolidaysList');
+                const saved = safeStorage.getItem('officialHolidaysList');
                 return saved ? JSON.parse(saved) : [];
             });
             React.useEffect(() => {
-                localStorage.setItem('officialHolidaysList', JSON.stringify(officialHolidays));
+                safeStorage.setItem('officialHolidaysList', JSON.stringify(officialHolidays));
             }, [officialHolidays]);
 
             // حالات نافذة العطل الرسمية والأعياد المتعددة الأيام
@@ -476,19 +476,19 @@
 
             // ===== سجل الإجازات الزمنية بالساعات وساعات الإضافي =====
             const [hourlyLeaveRecords, setHourlyLeaveRecords] = useState(() => {
-                const saved = localStorage.getItem('hourlyLeaveRecords');
+                const saved = safeStorage.getItem('hourlyLeaveRecords');
                 return saved ? JSON.parse(saved) : {};
             });
             const [overtimeHoursRecords, setOvertimeHoursRecords] = useState(() => {
-                const saved = localStorage.getItem('overtimeHoursRecords');
+                const saved = safeStorage.getItem('overtimeHoursRecords');
                 return saved ? JSON.parse(saved) : {};
             });
 
             React.useEffect(() => {
-                localStorage.setItem('hourlyLeaveRecords', JSON.stringify(hourlyLeaveRecords));
+                safeStorage.setItem('hourlyLeaveRecords', JSON.stringify(hourlyLeaveRecords));
             }, [hourlyLeaveRecords]);
             React.useEffect(() => {
-                localStorage.setItem('overtimeHoursRecords', JSON.stringify(overtimeHoursRecords));
+                safeStorage.setItem('overtimeHoursRecords', JSON.stringify(overtimeHoursRecords));
             }, [overtimeHoursRecords]);
 
             const toggleOfficialHolidayDate = (dateStr) => {
@@ -559,10 +559,10 @@
             };
 
             const [dataEntryOperator, setDataEntryOperator] = useState(() => {
-                return localStorage.getItem('dataEntryOperator') || 'م. أسامة خليل هاشم';
+                return safeStorage.getItem('dataEntryOperator') || 'م. أسامة خليل هاشم';
             });
             React.useEffect(() => {
-                localStorage.setItem('dataEntryOperator', dataEntryOperator);
+                safeStorage.setItem('dataEntryOperator', dataEntryOperator);
             }, [dataEntryOperator]);
 
             // ===== موقف الفترة (من - إلى) =====
@@ -629,17 +629,17 @@
                 setDailyReportDate(`${yyyy}-${mm}-${dd}`);
             };
             const [dailyStatusOverrides, setDailyStatusOverrides] = useState(() => {
-                const saved = localStorage.getItem('dailyStatusOverrides');
+                const saved = safeStorage.getItem('dailyStatusOverrides');
                 return saved ? JSON.parse(saved) : {};
             });
             const [anchorDate, setAnchorDate] = useState(() => {
-                return localStorage.getItem('shiftAnchorDate') || '2026-07-05';
+                return safeStorage.getItem('shiftAnchorDate') || '2026-07-05';
             });
             const [threeShiftAnchorSquad, setThreeShiftAnchorSquad] = useState(() => {
-                return localStorage.getItem('threeShiftAnchorSquad') || 'A';
+                return safeStorage.getItem('threeShiftAnchorSquad') || 'A';
             });
             const [twoShiftAnchorSquad, setTwoShiftAnchorSquad] = useState(() => {
-                return localStorage.getItem('twoShiftAnchorSquad') || 'A';
+                return safeStorage.getItem('twoShiftAnchorSquad') || 'A';
             });
             const [dailyReportDate, setDailyReportDate] = useState(() => {
                 const today = new Date();
@@ -650,13 +650,13 @@
             });
 
             React.useEffect(() => {
-                localStorage.setItem('dailyStatusOverrides', JSON.stringify(dailyStatusOverrides));
+                safeStorage.setItem('dailyStatusOverrides', JSON.stringify(dailyStatusOverrides));
             }, [dailyStatusOverrides]);
 
             React.useEffect(() => {
-                localStorage.setItem('shiftAnchorDate', anchorDate);
-                localStorage.setItem('threeShiftAnchorSquad', threeShiftAnchorSquad);
-                localStorage.setItem('twoShiftAnchorSquad', twoShiftAnchorSquad);
+                safeStorage.setItem('shiftAnchorDate', anchorDate);
+                safeStorage.setItem('threeShiftAnchorSquad', threeShiftAnchorSquad);
+                safeStorage.setItem('twoShiftAnchorSquad', twoShiftAnchorSquad);
             }, [anchorDate, threeShiftAnchorSquad, twoShiftAnchorSquad]);
 
             // ----------------------------------------------------
@@ -665,11 +665,11 @@
             
             // ===== نظام إدارة الصلاحيات وكلمات المرور (RBAC System) =====
             const [passwordsConfig, setPasswordsConfig] = useState(() => {
-                const saved = localStorage.getItem('passwordsConfig');
+                const saved = safeStorage.getItem('passwordsConfig');
                 return saved ? JSON.parse(saved) : { admin: '1975', operator: '2026', viewer: '1234' };
             });
             React.useEffect(() => {
-                localStorage.setItem('passwordsConfig', JSON.stringify(passwordsConfig));
+                safeStorage.setItem('passwordsConfig', JSON.stringify(passwordsConfig));
             }, [passwordsConfig]);
 
             const [currentUserRole, setCurrentUserRole] = useState(null);
@@ -724,7 +724,7 @@
                     viewer: newViewerPin.trim() || passwordsConfig.viewer
                 };
                 setPasswordsConfig(updated);
-                localStorage.setItem('passwordsConfig', JSON.stringify(updated));
+                safeStorage.setItem('passwordsConfig', JSON.stringify(updated));
                 alert('✅ تم تحديث وتأمين كلمات المرور بنجاح!');
                 setShowChangePasswordModal(false);
                 setNewAdminPin('');
@@ -789,43 +789,43 @@
                 isSyncingRef.current = true;
                 if (bundle.staffData && Array.isArray(bundle.staffData)) {
                     setStaff(bundle.staffData);
-                    localStorage.setItem('staffData', JSON.stringify(bundle.staffData));
+                    safeStorage.setItem('staffData', JSON.stringify(bundle.staffData));
                 }
                 if (bundle.officialHolidaysList && Array.isArray(bundle.officialHolidaysList)) {
                     setOfficialHolidays(bundle.officialHolidaysList);
-                    localStorage.setItem('officialHolidaysList', JSON.stringify(bundle.officialHolidaysList));
+                    safeStorage.setItem('officialHolidaysList', JSON.stringify(bundle.officialHolidaysList));
                 }
                 if (bundle.hourlyLeaveRecords) {
                     setHourlyLeaveRecords(bundle.hourlyLeaveRecords);
-                    localStorage.setItem('hourlyLeaveRecords', JSON.stringify(bundle.hourlyLeaveRecords));
+                    safeStorage.setItem('hourlyLeaveRecords', JSON.stringify(bundle.hourlyLeaveRecords));
                 }
                 if (bundle.overtimeHoursRecords) {
                     setOvertimeHoursRecords(bundle.overtimeHoursRecords);
-                    localStorage.setItem('overtimeHoursRecords', JSON.stringify(bundle.overtimeHoursRecords));
+                    safeStorage.setItem('overtimeHoursRecords', JSON.stringify(bundle.overtimeHoursRecords));
                 }
                 if (bundle.dailyStatusOverrides) {
                     setDailyStatusOverrides(bundle.dailyStatusOverrides);
-                    localStorage.setItem('dailyStatusOverrides', JSON.stringify(bundle.dailyStatusOverrides));
+                    safeStorage.setItem('dailyStatusOverrides', JSON.stringify(bundle.dailyStatusOverrides));
                 }
                 if (bundle.shiftAnchorDate) {
                     setAnchorDate(bundle.shiftAnchorDate);
-                    localStorage.setItem('shiftAnchorDate', bundle.shiftAnchorDate);
+                    safeStorage.setItem('shiftAnchorDate', bundle.shiftAnchorDate);
                 }
                 if (bundle.threeShiftAnchorSquad) {
                     setThreeShiftAnchorSquad(bundle.threeShiftAnchorSquad);
-                    localStorage.setItem('threeShiftAnchorSquad', bundle.threeShiftAnchorSquad);
+                    safeStorage.setItem('threeShiftAnchorSquad', bundle.threeShiftAnchorSquad);
                 }
                 if (bundle.twoShiftAnchorSquad) {
                     setTwoShiftAnchorSquad(bundle.twoShiftAnchorSquad);
-                    localStorage.setItem('twoShiftAnchorSquad', bundle.twoShiftAnchorSquad);
+                    safeStorage.setItem('twoShiftAnchorSquad', bundle.twoShiftAnchorSquad);
                 }
                 if (bundle.dataEntryOperator) {
                     setDataEntryOperator(bundle.dataEntryOperator);
-                    localStorage.setItem('dataEntryOperator', bundle.dataEntryOperator);
+                    safeStorage.setItem('dataEntryOperator', bundle.dataEntryOperator);
                 }
                 if (bundle.overtimeSelectedIds) {
                     setOvertimeIds(bundle.overtimeSelectedIds);
-                    localStorage.setItem('overtimeSelectedIds', JSON.stringify(bundle.overtimeSelectedIds));
+                    safeStorage.setItem('overtimeSelectedIds', JSON.stringify(bundle.overtimeSelectedIds));
                 }
                 setTimeout(() => { isSyncingRef.current = false; }, 500);
             };
@@ -1512,7 +1512,7 @@
             };
             
             // ===== المزامنة والنسخ الاحتياطي ومؤشرات الأمان =====
-            const [lastBackupDate, setLastBackupDate] = useState(() => localStorage.getItem('lastBackupDate'));
+            const [lastBackupDate, setLastBackupDate] = useState(() => safeStorage.getItem('lastBackupDate'));
             const [showDueSafetyOnly, setShowDueSafetyOnly] = useState(false);
             const [showSizeDetails, setShowSizeDetails] = useState(false);
             const [showMergeModal, setShowMergeModal] = useState(false);
@@ -1584,7 +1584,7 @@
                 });
                 if (migrated) {
                     setStaff(migratedStaff);
-                    localStorage.setItem('staffData', JSON.stringify(migratedStaff));
+                    safeStorage.setItem('staffData', JSON.stringify(migratedStaff));
                 }
             }, [staff]);
 
@@ -1710,7 +1710,7 @@
 
                 const sorted = sortByUnit(mergedList);
                 setStaff(sorted);
-                localStorage.setItem('staffData', JSON.stringify(sorted));
+                safeStorage.setItem('staffData', JSON.stringify(sorted));
                 
                 setShowWelcome(false);
                 setShowMergeModal(false);
@@ -2447,19 +2447,19 @@
                                 incomingList = data.staff;
                                 if (data.dailyStatusOverrides) {
                                     setDailyStatusOverrides(data.dailyStatusOverrides);
-                                    localStorage.setItem('dailyStatusOverrides', JSON.stringify(data.dailyStatusOverrides));
+                                    safeStorage.setItem('dailyStatusOverrides', JSON.stringify(data.dailyStatusOverrides));
                                 }
                                 if (data.shiftAnchorDate) {
                                     setAnchorDate(data.shiftAnchorDate);
-                                    localStorage.setItem('shiftAnchorDate', data.shiftAnchorDate);
+                                    safeStorage.setItem('shiftAnchorDate', data.shiftAnchorDate);
                                 }
                                 if (data.threeShiftAnchorSquad) {
                                     setThreeShiftAnchorSquad(data.threeShiftAnchorSquad);
-                                    localStorage.setItem('threeShiftAnchorSquad', data.threeShiftAnchorSquad);
+                                    safeStorage.setItem('threeShiftAnchorSquad', data.threeShiftAnchorSquad);
                                 }
                                 if (data.twoShiftAnchorSquad) {
                                     setTwoShiftAnchorSquad(data.twoShiftAnchorSquad);
-                                    localStorage.setItem('twoShiftAnchorSquad', data.twoShiftAnchorSquad);
+                                    safeStorage.setItem('twoShiftAnchorSquad', data.twoShiftAnchorSquad);
                                 }
                             } else {
                                 throw new Error('تنسيق ملف النسخة الاحتياطية غير مدعوم');
@@ -2847,7 +2847,7 @@
                     URL.revokeObjectURL(url);
                     
                     const today = new Date().toISOString();
-                    localStorage.setItem('lastBackupDate', today);
+                    safeStorage.setItem('lastBackupDate', today);
                     setLastBackupDate(today);
                     alert('✅ تم تصدير قاعدة البيانات (JSON) بنجاح كنسخة احتياطية!');
                 } catch (error) {
@@ -3545,7 +3545,7 @@
                 XLSX.utils.book_append_sheet(wb, ws, fileName);
                 XLSX.writeFile(wb, `${fileName}.xlsx`);
                 const today = new Date().toISOString();
-                localStorage.setItem('lastBackupDate', today);
+                safeStorage.setItem('lastBackupDate', today);
                 setLastBackupDate(today);
                 setShowPreview(false);
             };
@@ -3835,7 +3835,7 @@
                     a.click();
                     window.URL.revokeObjectURL(url);
                     const today = new Date().toISOString();
-                    localStorage.setItem('lastBackupDate', today);
+                    safeStorage.setItem('lastBackupDate', today);
                     setLastBackupDate(today);
                     setShowPreview(false);
                 } catch (error) {
@@ -5974,7 +5974,7 @@
                                                 onClick={() => {
                                                     if (confirm('❓ هل أنت متأكد من إفراغ سلة العمل الإضافي وتصفير القائمة بالكامل؟')) {
                                                         setOvertimeIds([]);
-                                                        localStorage.setItem('overtimeSelectedIds', JSON.stringify([]));
+                                                        safeStorage.setItem('overtimeSelectedIds', JSON.stringify([]));
                                                     }
                                                 }}
                                                 className="bg-teal-700 hover:bg-teal-800 text-teal-100 px-3 py-2 font-bold rounded-lg text-xs transition cursor-pointer"
@@ -6151,7 +6151,7 @@
                                                                                         onClick={() => {
                                                                                             const updated = overtimeIds.filter(id => id !== s.id);
                                                                                             setOvertimeIds(updated);
-                                                                                            localStorage.setItem('overtimeSelectedIds', JSON.stringify(updated));
+                                                                                            safeStorage.setItem('overtimeSelectedIds', JSON.stringify(updated));
                                                                                         }}
                                                                                         className="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer"
                                                                                     >
@@ -6162,7 +6162,7 @@
                                                                                         onClick={() => {
                                                                                             const updated = [...overtimeIds, s.id];
                                                                                             setOvertimeIds(updated);
-                                                                                            localStorage.setItem('overtimeSelectedIds', JSON.stringify(updated));
+                                                                                            safeStorage.setItem('overtimeSelectedIds', JSON.stringify(updated));
                                                                                         }}
                                                                                         className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer"
                                                                                     >
@@ -6552,7 +6552,7 @@
                                                                 return emp;
                                                             });
                                                             setStaff(updatedStaff);
-                                                            localStorage.setItem('staffData', JSON.stringify(updatedStaff));
+                                                            safeStorage.setItem('staffData', JSON.stringify(updatedStaff));
                                                             setSelectedSafetyIds([]);
                                                             alert('✅ تم تحديث تاريخ التجهيز للموظفين المحددين بنجاح!');
                                                         }
