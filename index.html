@@ -778,21 +778,24 @@
             const serverVersionRef = React.useRef(0);
             const isSyncingRef = React.useRef(false);
 
-            // بث التحديثات إلى السيرفر المحلى
+            // بث التحديثات إلى السيرفر المحلي والسحابة الحية
             const pushDataToServer = async (customBundle = null) => {
+                const bundle = customBundle || {
+                    staffData: staff,
+                    officialHolidaysList: officialHolidays,
+                    hourlyLeaveRecords: hourlyLeaveRecords,
+                    overtimeHoursRecords: overtimeHoursRecords,
+                    dailyStatusOverrides: dailyStatusOverrides,
+                    shiftAnchorDate: anchorDate,
+                    threeShiftAnchorSquad: threeShiftAnchorSquad,
+                    twoShiftAnchorSquad: twoShiftAnchorSquad,
+                    dataEntryOperator: dataEntryOperator,
+                    overtimeSelectedIds: overtimeIds,
+                    lastCloudUpdate: new Date().toISOString()
+                };
+
+                // بث إلى السيرفر المحلي في حال وجوده
                 try {
-                    const bundle = customBundle || {
-                        staffData: staff,
-                        officialHolidaysList: officialHolidays,
-                        hourlyLeaveRecords: hourlyLeaveRecords,
-                        overtimeHoursRecords: overtimeHoursRecords,
-                        dailyStatusOverrides: dailyStatusOverrides,
-                        shiftAnchorDate: anchorDate,
-                        threeShiftAnchorSquad: threeShiftAnchorSquad,
-                        twoShiftAnchorSquad: twoShiftAnchorSquad,
-                        dataEntryOperator: dataEntryOperator,
-                        overtimeSelectedIds: overtimeIds
-                    };
                     const res = await fetch('/api/sync', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -812,6 +815,13 @@
                     }
                 } catch (err) {
                     setSyncStatus(prev => ({ ...prev, connected: false }));
+                }
+
+                // بث إلى السحابة الحية دائماً (Firebase Cloud DB)
+                try {
+                    await pushDataToCloud(bundle);
+                } catch (cErr) {
+                    console.warn("Cloud push error:", cErr);
                 }
             };
 
