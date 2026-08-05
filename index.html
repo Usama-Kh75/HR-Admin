@@ -774,6 +774,60 @@
                 lastUpdated: '',
                 isSyncing: false
             });
+            const [cloudSyncStatus, setCloudSyncStatus] = useState({ connected: false, syncing: false, lastSync: null });
+            const CLOUD_DB_URL = "https://hr-admin-basra-default-rtdb.firebaseio.com/system_bundle.json";
+
+            const fetchCloudData = async () => {
+                try {
+                    setCloudSyncStatus(prev => ({ ...prev, syncing: true }));
+                    const res = await fetch(CLOUD_DB_URL);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && typeof data === 'object') {
+                            applyDataBundleToState(data);
+                            setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
+                        }
+                    } else {
+                        setCloudSyncStatus(prev => ({ ...prev, connected: false, syncing: false }));
+                    }
+                } catch (err) {
+                    setCloudSyncStatus(prev => ({ ...prev, connected: false, syncing: false }));
+                }
+            };
+
+            const pushDataToCloud = async (bundle = null) => {
+                try {
+                    const dataPayload = bundle || {
+                        staffData: staff,
+                        officialHolidaysList: officialHolidays,
+                        hourlyLeaveRecords: hourlyLeaveRecords,
+                        overtimeHoursRecords: overtimeHoursRecords,
+                        dailyStatusOverrides: dailyStatusOverrides,
+                        shiftAnchorDate: anchorDate,
+                        threeShiftAnchorSquad: threeShiftAnchorSquad,
+                        twoShiftAnchorSquad: twoShiftAnchorSquad,
+                        dataEntryOperator: dataEntryOperator,
+                        overtimeSelectedIds: overtimeIds,
+                        lastCloudUpdate: new Date().toISOString()
+                    };
+                    const res = await fetch(CLOUD_DB_URL, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(dataPayload)
+                    });
+                    if (res.ok) {
+                        setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
+                    }
+                } catch (err) {
+                    console.warn("Could not push to Cloud:", err);
+                }
+            };
+
+            React.useEffect(() => {
+                fetchCloudData();
+                const interval = setInterval(fetchCloudData, 15000);
+                return () => clearInterval(interval);
+            }, []);
             const [showSyncModal, setShowSyncModal] = useState(false);
             const serverVersionRef = React.useRef(0);
             const isSyncingRef = React.useRef(false);
@@ -4071,7 +4125,7 @@
                                 title="اضغط لعرض تفاصيل المزامنة ورابط أجهزة الشعبة"
                             >
                                 <span className="relative flex h-2.5 w-2.5">
-                                    {cloudSyncStatus.connected || syncStatus.connected ? (
+                                    {(typeof cloudSyncStatus !== 'undefined' && cloudSyncStatus && cloudSyncStatus.connected) || syncStatus.connected ? (
                                         <>
                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
@@ -4081,7 +4135,7 @@
                                     )}
                                 </span>
                                 <span className="text-xs font-bold">
-                                    {cloudSyncStatus.connected ? '☁️ متصل بالسحابة الحية (أونلاين 24/7)' : (syncStatus.connected ? `🟢 السيرفر المحلي نشط (${syncStatus.ip || 'Local'})` : '🟡 أوفلاين محلي')}
+                                    {(typeof cloudSyncStatus !== 'undefined' && cloudSyncStatus && cloudSyncStatus.connected) ? '☁️ متصل بالسحابة الحية (أونلاين 24/7)' : (syncStatus.connected ? `🟢 السيرفر المحلي نشط (${syncStatus.ip || 'Local'})` : '🟡 أوفلاين محلي')}
                                 </span>
                             </div>
 
