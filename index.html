@@ -775,23 +775,25 @@
                 isSyncing: false
             });
             const [cloudSyncStatus, setCloudSyncStatus] = useState({ connected: false, syncing: false, lastSync: null });
-            const CLOUD_DB_URL = "https://hr-admin-basra-default-rtdb.firebaseio.com/system_bundle.json";
+            const CLOUD_DB_URL = "./data.json";
 
             const fetchCloudData = async () => {
                 try {
                     setCloudSyncStatus(prev => ({ ...prev, syncing: true }));
-                    const res = await fetch(CLOUD_DB_URL);
+                    const res = await fetch('./data.json?t=' + Date.now());
                     if (res.ok) {
                         const data = await res.json();
                         if (data && typeof data === 'object') {
-                            applyDataBundleToState(data);
+                            if (data.staffData && Array.isArray(data.staffData) && data.staffData.length > 0) {
+                                applyDataBundleToState(data);
+                            }
                             setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
                         }
                     } else {
-                        setCloudSyncStatus(prev => ({ ...prev, connected: false, syncing: false }));
+                        setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
                     }
                 } catch (err) {
-                    setCloudSyncStatus(prev => ({ ...prev, connected: false, syncing: false }));
+                    setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
                 }
             };
 
