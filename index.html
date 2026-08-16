@@ -774,22 +774,21 @@
                 lastUpdated: '',
                 isSyncing: false
             });
-                        const [cloudSyncStatus, setCloudSyncStatus] = useState({ connected: true, syncing: false, lastSync: null });
-            const CLOUD_OBJECT_ID = "ff8081819ff5b11001a00a4febb02bb9";
-            const CLOUD_ENDPOINT = `https://api.restful-api.dev/objects/${CLOUD_OBJECT_ID}`;
+                                    // ===== محرك المزامنة السحابية الحية الرسمي (Google Firebase Realtime DB) =====
+            const FIREBASE_DB_URL = "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle.json";
+            const [cloudSyncStatus, setCloudSyncStatus] = useState({ connected: true, syncing: false, lastSync: null });
             const lastCloudTimeRef = React.useRef(null);
 
-            // جلب البيانات السحابية الحية لجميع المستخدمين
+            // جلب البيانات السحابية الحية فورياً وتحديث كافة الأجهزة
             const fetchCloudData = async () => {
                 try {
                     setCloudSyncStatus(prev => ({ ...prev, syncing: true }));
-                    const res = await fetch(CLOUD_ENDPOINT, {
+                    const res = await fetch(FIREBASE_DB_URL + '?t=' + Date.now(), {
                         method: 'GET',
                         headers: { 'Cache-Control': 'no-cache' }
                     });
                     if (res.ok) {
-                        const jsonRes = await res.json();
-                        const cloudData = jsonRes.data;
+                        const cloudData = await res.json();
                         if (cloudData && typeof cloudData === 'object') {
                             if (cloudData.lastCloudUpdate && cloudData.lastCloudUpdate !== lastCloudTimeRef.current) {
                                 lastCloudTimeRef.current = cloudData.lastCloudUpdate;
@@ -827,26 +826,23 @@
                         lastCloudUpdate: nowIso
                     };
 
-                    const res = await fetch(CLOUD_ENDPOINT, {
+                    const res = await fetch(FIREBASE_DB_URL, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            name: "HR_ADMIN_BASRA_OIL_COMPANY_MASTER_CLOUD_DB",
-                            data: dataPayload
-                        })
+                        body: JSON.stringify(dataPayload)
                     });
                     if (res.ok) {
                         setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
                     }
                 } catch (err) {
-                    console.warn("Cloud push error:", err);
+                    console.warn("Could not push to Firebase Cloud:", err);
                 }
             };
 
-            // التفقّد والتحقق الدوري من السحابة كل 8 ثوانٍ
+            // التفقّد السحابي الفوري كل 5 ثوانٍ لمزامنة أجهزة وموبايلات الشعبة فورياً
             React.useEffect(() => {
                 fetchCloudData();
-                const interval = setInterval(fetchCloudData, 8000);
+                const interval = setInterval(fetchCloudData, 5000);
                 return () => clearInterval(interval);
             }, []);
             const [showSyncModal, setShowSyncModal] = useState(false);
