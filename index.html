@@ -468,10 +468,11 @@
                 return parsed;
             });
             
-            // حفظ تلقائي عند تغيير البيانات
+            // حفظ تلقائي عند تغيير البيانات وبثها للسحابة الحية
             React.useEffect(() => {
-                if (staff.length > 0) {
+                if (staff.length > 1 && !isSyncingRef.current) {
                     safeStorage.setItem('staffData', JSON.stringify(staff));
+                    pushDataToCloud();
                 }
             }, [staff]);
             const [view, setView] = useState('dashboard');
@@ -865,34 +866,36 @@
                     lastCloudUpdate: new Date().toISOString()
                 };
 
-                // بث إلى السيرفر المحلي في حال وجوده
-                try {
-                    const res = await fetch('/api/sync', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ data: bundle })
-                    });
-                    if (res.ok) {
-                        const resData = await res.json();
-                        if (resData.success) {
-                            serverVersionRef.current = resData.version;
-                            setSyncStatus(prev => ({
-                                ...prev,
-                                connected: true,
-                                version: resData.version,
-                                lastUpdated: resData.last_updated
-                            }));
-                        }
-                    }
-                } catch (err) {
-                    setSyncStatus(prev => ({ ...prev, connected: false }));
-                }
-
-                // بث إلى السحابة الحية دائماً (Firebase Cloud DB)
+                // بث إلى السحابة الحية دائماً فوراً وبشكل أولي (Firebase Cloud DB)
                 try {
                     await pushDataToCloud(bundle);
                 } catch (cErr) {
                     console.warn("Cloud push error:", cErr);
+                }
+
+                // بث إلى السيرفر المحلي فقط في حال التشغيل على الشبكة المحلية
+                if (!window.location.hostname.includes('github.io') && window.location.protocol !== 'file:') {
+                    try {
+                        const res = await fetch('/api/sync', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ data: bundle })
+                        });
+                        if (res.ok) {
+                            const resData = await res.json();
+                            if (resData.success) {
+                                serverVersionRef.current = resData.version;
+                                setSyncStatus(prev => ({
+                                    ...prev,
+                                    connected: true,
+                                    version: resData.version,
+                                    lastUpdated: resData.last_updated
+                                }));
+                            }
+                        }
+                    } catch (err) {
+                        setSyncStatus(prev => ({ ...prev, connected: false }));
+                    }
                 }
             };
 
