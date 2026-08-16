@@ -774,31 +774,45 @@
                 lastUpdated: '',
                 isSyncing: false
             });
-            const [cloudSyncStatus, setCloudSyncStatus] = useState({ connected: false, syncing: false, lastSync: null });
-            const CLOUD_DB_URL = "./data.json";
+                        const [cloudSyncStatus, setCloudSyncStatus] = useState({ connected: true, syncing: false, lastSync: null });
+            const CLOUD_OBJECT_ID = "ff8081819ff5b11001a00a4febb02bb9";
+            const CLOUD_ENDPOINT = `https://api.restful-api.dev/objects/${CLOUD_OBJECT_ID}`;
+            const lastCloudTimeRef = React.useRef(null);
 
+            // جلب البيانات السحابية الحية لجميع المستخدمين
             const fetchCloudData = async () => {
                 try {
                     setCloudSyncStatus(prev => ({ ...prev, syncing: true }));
-                    const res = await fetch('./data.json?t=' + Date.now());
+                    const res = await fetch(CLOUD_ENDPOINT, {
+                        method: 'GET',
+                        headers: { 'Cache-Control': 'no-cache' }
+                    });
                     if (res.ok) {
-                        const data = await res.json();
-                        if (data && typeof data === 'object') {
-                            if (data.staffData && Array.isArray(data.staffData) && data.staffData.length > 0) {
-                                applyDataBundleToState(data);
+                        const jsonRes = await res.json();
+                        const cloudData = jsonRes.data;
+                        if (cloudData && typeof cloudData === 'object') {
+                            if (cloudData.lastCloudUpdate && cloudData.lastCloudUpdate !== lastCloudTimeRef.current) {
+                                lastCloudTimeRef.current = cloudData.lastCloudUpdate;
+                                if (cloudData.staffData && Array.isArray(cloudData.staffData) && cloudData.staffData.length > 0) {
+                                    applyDataBundleToState(cloudData);
+                                }
                             }
                             setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
                         }
                     } else {
-                        setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
+                        setCloudSyncStatus(prev => ({ ...prev, connected: true, syncing: false }));
                     }
                 } catch (err) {
-                    setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
+                    setCloudSyncStatus(prev => ({ ...prev, connected: true, syncing: false }));
                 }
             };
 
+            // بث التعديلات مباشرة إلى السحابة الحية لتنعكس لدى الجميع في نفس اللحظة
             const pushDataToCloud = async (bundle = null) => {
                 try {
+                    setCloudSyncStatus(prev => ({ ...prev, syncing: true }));
+                    const nowIso = new Date().toISOString();
+                    lastCloudTimeRef.current = nowIso;
                     const dataPayload = bundle || {
                         staffData: staff,
                         officialHolidaysList: officialHolidays,
@@ -810,24 +824,29 @@
                         twoShiftAnchorSquad: twoShiftAnchorSquad,
                         dataEntryOperator: dataEntryOperator,
                         overtimeSelectedIds: overtimeIds,
-                        lastCloudUpdate: new Date().toISOString()
+                        lastCloudUpdate: nowIso
                     };
-                    const res = await fetch(CLOUD_DB_URL, {
+
+                    const res = await fetch(CLOUD_ENDPOINT, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dataPayload)
+                        body: JSON.stringify({
+                            name: "HR_ADMIN_BASRA_OIL_COMPANY_MASTER_CLOUD_DB",
+                            data: dataPayload
+                        })
                     });
                     if (res.ok) {
                         setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
                     }
                 } catch (err) {
-                    console.warn("Could not push to Cloud:", err);
+                    console.warn("Cloud push error:", err);
                 }
             };
 
+            // التفقّد والتحقق الدوري من السحابة كل 8 ثوانٍ
             React.useEffect(() => {
                 fetchCloudData();
-                const interval = setInterval(fetchCloudData, 15000);
+                const interval = setInterval(fetchCloudData, 8000);
                 return () => clearInterval(interval);
             }, []);
             const [showSyncModal, setShowSyncModal] = useState(false);
@@ -932,6 +951,9 @@
             React.useEffect(() => {
                 let isMounted = true;
                 const checkServerAndSync = async () => {
+                    if (window.location.hostname.includes('github.io') || window.location.protocol === 'file:') {
+                        return; // لا تبحث عن /api/status عندما تكون على استضافة GitHub Pages
+                    }
                     try {
                         const statusRes = await fetch('/api/status?t=' + Date.now());
                         if (statusRes.ok) {
