@@ -682,9 +682,23 @@
                 return `${year}-${month}-${day}`;
             });
 
+            // حفظ وبث الموقف اليومي تلقائياً للسحابة الحية لتعميمه على كافة أجهزة وموبايلات الشعبة فورياً
             React.useEffect(() => {
                 safeStorage.setItem('dailyStatusOverrides', JSON.stringify(dailyStatusOverrides));
+                if (!isSyncingRef.current && (Object.keys(dailyStatusOverrides).length > 0 || staff.length > 0)) {
+                    pushDataToCloud();
+                }
             }, [dailyStatusOverrides]);
+
+            // حفظ وبث الساعات الإضافية والإجازات الزمنية والعطل للسحابة فورياً
+            React.useEffect(() => {
+                safeStorage.setItem('officialHolidaysList', JSON.stringify(officialHolidays));
+                safeStorage.setItem('hourlyLeaveRecords', JSON.stringify(hourlyLeaveRecords));
+                safeStorage.setItem('overtimeHoursRecords', JSON.stringify(overtimeHoursRecords));
+                if (!isSyncingRef.current && staff.length > 0) {
+                    pushDataToCloud();
+                }
+            }, [officialHolidays, hourlyLeaveRecords, overtimeHoursRecords]);
 
             React.useEffect(() => {
                 safeStorage.setItem('shiftAnchorDate', anchorDate);
@@ -706,6 +720,17 @@
             }, [passwordsConfig]);
 
             const [currentUserRole, setCurrentUserRole] = useState(null);
+            const [pendingDeletionRequest, setPendingDeletionRequest] = useState(() => {
+                const saved = safeStorage.getItem('pendingDeletionRequest');
+                return saved ? JSON.parse(saved) : null;
+            });
+            React.useEffect(() => {
+                if (pendingDeletionRequest) {
+                    safeStorage.setItem('pendingDeletionRequest', JSON.stringify(pendingDeletionRequest));
+                } else {
+                    safeStorage.removeItem('pendingDeletionRequest');
+                }
+            }, [pendingDeletionRequest]);
 
             const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
             const [loginInputRole, setLoginInputRole] = useState('operator');
@@ -824,7 +849,8 @@
                         twoShiftAnchorSquad: twoShiftAnchorSquad,
                         dataEntryOperator: dataEntryOperator,
                         overtimeSelectedIds: overtimeIds,
-                        lastCloudUpdate: nowIso
+                        lastCloudUpdate: nowIso,
+                        pendingDeletionRequest: pendingDeletionRequest
                     };
 
                     const res = await fetch(FIREBASE_DB_URL, {
@@ -938,6 +964,14 @@
                 if (bundle.dataEntryOperator) {
                     setDataEntryOperator(bundle.dataEntryOperator);
                     safeStorage.setItem('dataEntryOperator', bundle.dataEntryOperator);
+                }
+                if (bundle.pendingDeletionRequest !== undefined) {
+                    setPendingDeletionRequest(bundle.pendingDeletionRequest);
+                    if (bundle.pendingDeletionRequest) {
+                        safeStorage.setItem('pendingDeletionRequest', JSON.stringify(bundle.pendingDeletionRequest));
+                    } else {
+                        safeStorage.removeItem('pendingDeletionRequest');
+                    }
                 }
                 if (bundle.overtimeSelectedIds) {
                     setOvertimeIds(bundle.overtimeSelectedIds);
@@ -3373,16 +3407,98 @@
             };
             
             const clearAllData = () => {
-                const adminPin = prompt('🔐 يتطلب مسح جميع البيانات إدخال الرمز السري للإداري:');
-                if (adminPin !== passwordsConfig.admin) {
-                    alert('❌ الرمز السري غير صحيح! تم إلغاء العملية للحماية.');
+                if (currentUserRole !== 'admin') {
+                    // مسار الإداري المُدخل: تقديم طلب حذف رسمي لمدير النظام
+                    const reason = prompt('📝 تقديم طلب حذف رسمي لمدير النظام:\n\nيرجى كتابة سبب طلب حذف أو تفريغ قاعدة البيانات ليتم إرسال إشعار للموافقة:');
+                    if (!reason || !reason.trim()) {
+                        alert('⚠️ تم إلغاء الطلب: يجب كتابة سبب الحذف.');
+                        return;
+                    }
+                    const newRequest = {
+                        id: 'del_req_' + Date.now(),
+                        requestedBy: dataEntryOperator || 'الإداري المُدخل',
+                        reason: reason.trim(),
+                        timestamp: new Date().toLocaleString('ar-IQ'),
+                        status: 'pending'
+                    };
+                    setPendingDeletionRequest(newRequest);
+                    safeStorage.setItem('pendingDeletionRequest', JSON.stringify(newRequest));
+                    pushDataToCloud({
+                        staffData: staff,
+                        officialHolidaysList: officialHolidays,
+                        hourlyLeaveRecords: hourlyLeaveRecords,
+                        overtimeHoursRecords: overtimeHoursRecords,
+                        dailyStatusOverrides: dailyStatusOverrides,
+                        shiftAnchorDate: anchorDate,
+                        threeShiftAnchorSquad: threeShiftAnchorSquad,
+                        twoShiftAnchorSquad: twoShiftAnchorSquad,
+                        dataEntryOperator: dataEntryOperator,
+                        overtimeSelectedIds: overtimeIds,
+                        lastCloudUpdate: new Date().toISOString(),
+                        pendingDeletionRequest: newRequest
+                    });
+                    alert('📨 تم إرسال طلب الحذف بنجاح إلى (👑 مدير النظام الرئيسي)!\n\nستصل رسالة لمدير النظام، وبمجرد موافقته سيتم تفريغ القاعدة سحابياً.');
                     return;
                 }
-                if (confirm('⚠️ هل أنت متأكد من مسح جميع البيانات؟\n\nسيتم حذف جميع الموظفين والعودة للنظام الفارغ.')) {
-                    setStaff([]);
-                    setView('dashboard');
-                    alert('✅ تم مسح جميع البيانات بنجاح!');
+
+                // مسار مدير النظام المباشر
+                const adminPin = prompt('🔐 تأكيد الحذف المباشر: يرجى إدخال الرمز السري لمدير النظام:');
+                if (adminPin !== passwordsConfig.admin) {
+                    alert('❌ الرمز السري غير صحيح! تم إلغاء العملية للحماية والأمان.');
+                    return;
                 }
+                if (confirm('⚠️ تحذير أمني:\n\nهل أنت متأكد تماماً من تفريغ ومسح قاعدة البيانات بالكامل؟\nسيتم تعميم المسح سحابياً على جميع أجهزة الشعبة.')) {
+                    executeCompleteDatabaseWipe();
+                }
+            };
+
+            // دالة التنفيذ الفعلي لمسح وتفريغ قاعدة البيانات
+            const executeCompleteDatabaseWipe = () => {
+                setStaff([]);
+                setDailyStatusOverrides({});
+                setHourlyLeaveRecords({});
+                setOvertimeHoursRecords({});
+                setPendingDeletionRequest(null);
+                safeStorage.setItem('staffData', JSON.stringify([]));
+                safeStorage.setItem('dailyStatusOverrides', JSON.stringify({}));
+                safeStorage.removeItem('pendingDeletionRequest');
+                pushDataToCloud({
+                    staffData: [],
+                    officialHolidaysList: officialHolidays,
+                    hourlyLeaveRecords: {},
+                    overtimeHoursRecords: {},
+                    dailyStatusOverrides: {},
+                    shiftAnchorDate: anchorDate,
+                    threeShiftAnchorSquad: threeShiftAnchorSquad,
+                    twoShiftAnchorSquad: twoShiftAnchorSquad,
+                    dataEntryOperator: dataEntryOperator,
+                    overtimeSelectedIds: [],
+                    lastCloudUpdate: new Date().toISOString(),
+                    pendingDeletionRequest: null
+                });
+                setView('dashboard');
+                alert('✅ تم مسح وتفريغ قاعدة البيانات بنجاح وتعميم ذلك سحابياً على كافة الأجهزة.');
+            };
+
+            // دالة رفض طلب الحذف من قبل مدير النظام
+            const rejectDeletionRequest = () => {
+                setPendingDeletionRequest(null);
+                safeStorage.removeItem('pendingDeletionRequest');
+                pushDataToCloud({
+                    staffData: staff,
+                    officialHolidaysList: officialHolidays,
+                    hourlyLeaveRecords: hourlyLeaveRecords,
+                    overtimeHoursRecords: overtimeHoursRecords,
+                    dailyStatusOverrides: dailyStatusOverrides,
+                    shiftAnchorDate: anchorDate,
+                    threeShiftAnchorSquad: threeShiftAnchorSquad,
+                    twoShiftAnchorSquad: twoShiftAnchorSquad,
+                    dataEntryOperator: dataEntryOperator,
+                    overtimeSelectedIds: overtimeIds,
+                    lastCloudUpdate: new Date().toISOString(),
+                    pendingDeletionRequest: null
+                });
+                alert('❌ تم رفض وإلغاء طلب الحذف.');
             };
             
             // دالة تحديث القياسات من ملف Excel
@@ -4123,6 +4239,57 @@
                     )}
                     
                     {/* رأس الصفحة الكلاسيكي المطور بألوان زاهية وراقية كالسابق */}
+                                {/* إشعار طلب الحذف السحابي المعلق لمدير النظام */}
+            {pendingDeletionRequest && pendingDeletionRequest.status === 'pending' && (
+                <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white p-4 shadow-xl border-b-2 border-amber-300 animate-pulse sticky top-0 z-50">
+                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 text-right">
+                            <span className="text-3xl">🔔</span>
+                            <div>
+                                <div className="font-extrabold text-sm md:text-base flex items-center gap-2">
+                                    <span>طلب حذف قاعدة البيانات مقدم من:</span>
+                                    <span className="bg-white/20 px-2 py-0.5 rounded-lg font-mono font-black">{pendingDeletionRequest.requestedBy}</span>
+                                    <span className="text-xs opacity-80">({pendingDeletionRequest.timestamp})</span>
+                                </div>
+                                <div className="text-xs text-amber-100 mt-1 font-semibold">
+                                    سبب الطلب: "{pendingDeletionRequest.reason}"
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {currentUserRole === 'admin' ? (
+                                <>
+                                    <button 
+                                        onClick={() => {
+                                            const pin = prompt('🔐 تأكيد الموافقة على الحذف: أدخل الرمز السري لمدير النظام:');
+                                            if (pin === passwordsConfig.admin) {
+                                                if (confirm('⚠️ هل توافق رسمياً على تنفيذ طلب الحذف ومسح كافة البيانات سحابياً؟')) {
+                                                    executeCompleteDatabaseWipe();
+                                                }
+                                            } else {
+                                                alert('❌ الرمز السري غير صحيح!');
+                                            }
+                                        }}
+                                        className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg transition flex items-center gap-1"
+                                    >
+                                        <span>✅</span> موافقة وتنفيذ الحذف
+                                    </button>
+                                    <button 
+                                        onClick={rejectDeletionRequest}
+                                        className="bg-slate-900/80 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-xl shadow transition"
+                                    >
+                                        <span>❌</span> رفض الطلب
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="bg-black/30 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-200 flex items-center gap-1.5">
+                                    <span className="animate-spin text-sm">⏳</span> الطلب بانتظار موافقة مدير النظام الرئيسي
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
                     <header className="bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-800 text-white shadow-xl relative overflow-hidden py-7 px-6 border-b-2 border-indigo-500 border-opacity-20">
                         {/* توهج ضوئي خلفي ناعم */}
                         <div className="absolute inset-0 bg-white opacity-5 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent pointer-events-none"></div>
