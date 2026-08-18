@@ -682,9 +682,23 @@
                 return `${year}-${month}-${day}`;
             });
 
+            // حفظ وبث الموقف اليومي تلقائياً للسحابة الحية لتعميمه على كافة أجهزة وموبايلات الشعبة فورياً
             React.useEffect(() => {
                 safeStorage.setItem('dailyStatusOverrides', JSON.stringify(dailyStatusOverrides));
+                if (!isSyncingRef.current && (Object.keys(dailyStatusOverrides).length > 0 || staff.length > 0)) {
+                    pushDataToCloud();
+                }
             }, [dailyStatusOverrides]);
+
+            // حفظ وبث الساعات الإضافية والإجازات الزمنية والعطل للسحابة فورياً
+            React.useEffect(() => {
+                safeStorage.setItem('officialHolidaysList', JSON.stringify(officialHolidays));
+                safeStorage.setItem('hourlyLeaveRecords', JSON.stringify(hourlyLeaveRecords));
+                safeStorage.setItem('overtimeHoursRecords', JSON.stringify(overtimeHoursRecords));
+                if (!isSyncingRef.current && staff.length > 0) {
+                    pushDataToCloud();
+                }
+            }, [officialHolidays, hourlyLeaveRecords, overtimeHoursRecords]);
 
             React.useEffect(() => {
                 safeStorage.setItem('shiftAnchorDate', anchorDate);
@@ -3373,15 +3387,22 @@
             };
             
             const clearAllData = () => {
-                const adminPin = prompt('🔐 يتطلب مسح جميع البيانات إدخال الرمز السري للإداري:');
-                if (adminPin !== passwordsConfig.admin) {
-                    alert('❌ الرمز السري غير صحيح! تم إلغاء العملية للحماية.');
+                if (currentUserRole !== 'admin') {
+                    alert('⛔ عذراً! صلاحية حذف وتفريغ قاعدة البيانات مقتصرة حصرياً على (👑 مدير النظام الرئيسي). لا يمكن للمُدخلين أو المستعرضين تنفيذ هذا الإجراء.');
                     return;
                 }
-                if (confirm('⚠️ هل أنت متأكد من مسح جميع البيانات؟\n\nسيتم حذف جميع الموظفين والعودة للنظام الفارغ.')) {
+                const adminPin = prompt('🔐 تأكيد الحذف: يرجى إدخال الرمز السري لمدير النظام الرئيسي:');
+                if (adminPin !== passwordsConfig.admin) {
+                    alert('❌ الرمز السري غير صحيح! تم إلغاء العملية للحماية والأمان.');
+                    return;
+                }
+                if (confirm('⚠️ تحذير أمني شديد:\n\nهل أنت متأكد تماماً من رغبتك في مسح قاعدة البيانات بالكامل؟\nسيتم تعميم الحذف سحابياً على جميع الأجهزة.')) {
                     setStaff([]);
+                    setDailyStatusOverrides({});
+                    setHourlyLeaveRecords({});
+                    setOvertimeHoursRecords({});
                     setView('dashboard');
-                    alert('✅ تم مسح جميع البيانات بنجاح!');
+                    alert('✅ تم مسح قاعدة البيانات بنجاح من قبل مدير النظام.');
                 }
             };
             
