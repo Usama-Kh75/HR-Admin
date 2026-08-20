@@ -875,10 +875,12 @@
                         pendingDeletionRequest: pendingDeletionRequest
                     };
 
+                    // بث سريع مباشر عبر fetch
                     const res = await fetch(FIREBASE_DB_URL, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dataPayload)
+                        body: JSON.stringify(dataPayload),
+                        keepalive: true // يضمن استمرار إرسال البيانات حتى لو أغلق المستخدم المتصفح فوراً
                     });
                     if (res.ok) {
                         setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
@@ -888,7 +890,6 @@
                 }
             };
 
-            // التفقّد السحابي الفوري كل 5 ثوانٍ لمزامنة أجهزة وموبايلات الشعبة فورياً
             React.useEffect(() => {
                 fetchCloudData();
                 const interval = setInterval(fetchCloudData, 5000);
@@ -1395,12 +1396,33 @@
                     } catch(e) {}
                 }
 
+                let nextOverrides;
                 setDailyStatusOverrides(prev => {
                     const next = { ...prev };
                     if (!next[dateStr]) next[dateStr] = {};
                     next[dateStr][empId] = status;
+                    nextOverrides = next;
                     return next;
                 });
+                // بث مباشر وفوري للموقف اليومي للسحابة في نفس اللحظة
+                setTimeout(() => {
+                    if (nextOverrides) {
+                        pushDataToCloud({
+                            staffData: staff,
+                            officialHolidaysList: officialHolidays,
+                            hourlyLeaveRecords: hourlyLeaveRecords,
+                            overtimeHoursRecords: overtimeHoursRecords,
+                            dailyStatusOverrides: nextOverrides,
+                            shiftAnchorDate: anchorDate,
+                            threeShiftAnchorSquad: threeShiftAnchorSquad,
+                            twoShiftAnchorSquad: twoShiftAnchorSquad,
+                            dataEntryOperator: dataEntryOperator,
+                            overtimeSelectedIds: overtimeIds,
+                            lastCloudUpdate: new Date().toISOString(),
+                            pendingDeletionRequest: pendingDeletionRequest
+                        });
+                    }
+                }, 50);
             };
 
             const handleThreeShiftAnchorChange = (squad) => {
@@ -3366,6 +3388,22 @@
                 
                 const sortedStaff = sortByUnit(updatedStaff);
                 setStaff(sortedStaff);
+                safeStorage.setItem('staffData', JSON.stringify(sortedStaff));
+                // بث مباشر وفوري للسحابة فور الضغط على حفظ
+                pushDataToCloud({
+                    staffData: sortedStaff,
+                    officialHolidaysList: officialHolidays,
+                    hourlyLeaveRecords: hourlyLeaveRecords,
+                    overtimeHoursRecords: overtimeHoursRecords,
+                    dailyStatusOverrides: dailyStatusOverrides,
+                    shiftAnchorDate: anchorDate,
+                    threeShiftAnchorSquad: threeShiftAnchorSquad,
+                    twoShiftAnchorSquad: twoShiftAnchorSquad,
+                    dataEntryOperator: dataEntryOperator,
+                    overtimeSelectedIds: overtimeIds,
+                    lastCloudUpdate: new Date().toISOString(),
+                    pendingDeletionRequest: pendingDeletionRequest
+                });
                 setShowEditModal(false);
                 setEditingEmployee(null);
                 stopCamera();
