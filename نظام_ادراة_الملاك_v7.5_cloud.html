@@ -155,19 +155,24 @@
         .editable-cell:focus { outline: none; border-color: #4299e1; background: #ebf8ff; }
         .preview-footer { padding: 20px 24px; background: #f7fafc; border-top: 2px solid #e2e8f0; display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
         
-        /* تنسيق الطباعة */
+        /* تنسيق الطباعة عالي الكثافة (توفير الورق وتقليص الصفحات من 6 إلى 2-3 صفحات) */
         @media print {
-            body { background: white; margin: 0; padding: 0; }
+            @page {
+                size: A4 portrait;
+                margin: 6mm 5mm 6mm 5mm;
+            }
+            body { background: white !important; margin: 0 !important; padding: 0 !important; font-size: 7.5pt !important; }
             
             /* إخفاء كل شيء ما عدا المعاينة */
-            header, nav, main, footer { display: none !important; }
+            header, nav, main, footer, .no-print, button { display: none !important; }
             
             /* إظهار المعاينة فقط */
             .preview-overlay { 
                 background: white !important; 
                 position: static !important; 
-                display: block !important;
+                display: block !important; 
                 padding: 0 !important;
+                margin: 0 !important;
             }
             
             .preview-container { 
@@ -175,105 +180,119 @@
                 max-width: 100% !important; 
                 max-height: none !important;
                 border-radius: 0 !important;
+                border: none !important;
             }
             
-            /* العنوان */
+            /* العنوان المصغر والأنيق */
             .preview-header { 
                 background: white !important; 
                 color: black !important; 
-                border-bottom: 2px solid #000; 
+                border-bottom: 1.5px solid #000 !important; 
                 page-break-after: avoid;
-                padding: 6px 20px !important;
+                padding: 2px 5px !important;
+                margin-bottom: 3px !important;
             }
-            
-            /* إخفاء الزر والنصوص الإضافية */
-            .preview-header button { display: none !important; }
-            .preview-header p, .no-print { display: none !important; }
-            
+            .preview-header * { display: none !important; }
             .preview-header h2 { 
+                display: block !important; 
                 color: black !important; 
-                font-size: 18pt !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                text-align: center !important;
-                line-height: 1.2 !important;
+                font-size: 11pt !important; 
+                font-weight: 900 !important; 
+                margin: 0 !important; 
+                padding: 1px 0 !important; 
+                text-align: center !important; 
             }
             
-            /* إخفاء أي نصوص أو عناصر إضافية في الطباعة */
-            @media print {
-                .preview-header > div > * { display: none !important; }
-                .preview-header h2 { display: block !important; }
-            }
-            
-            /* إخفاء الأزرار */
             .preview-footer { display: none !important; }
             
-            /* محتوى الجدول */
+            /* محتوى الجدول فائق التكثيف */
             .preview-body { 
                 max-height: none !important; 
                 overflow: visible !important; 
-                padding: 8px 20px !important; 
+                padding: 0 !important; 
             }
             
-            /* الجدول */
             .preview-table { 
-                font-size: 10pt !important; 
+                font-size: 7.5pt !important; 
                 page-break-inside: auto;
                 width: 100% !important;
+                border-collapse: collapse !important;
+                line-height: 1.15 !important;
             }
             
             .preview-table thead { 
                 display: table-header-group;
-                background: #f0f0f0 !important;
+                background: #e2e8f0 !important;
             }
             
             .preview-table tr { 
                 page-break-inside: avoid; 
                 page-break-after: auto; 
+                height: 18px !important;
             }
             
             .preview-table th { 
-                background: #f0f0f0 !important; 
+                background: #f1f5f9 !important; 
                 color: black !important; 
-                border: 1px solid #000 !important;
-                padding: 8px 6px !important;
-                font-weight: bold !important;
+                border: 1px solid #1e293b !important; 
+                padding: 2.5px 3px !important; 
+                font-weight: 900 !important;
+                font-size: 7.5pt !important;
             }
             
             .preview-table td { 
-                border: 1px solid #666 !important;
-                padding: 6px 4px !important;
-                color: black !important;
+                border: 1px solid #64748b !important; 
+                padding: 1.5px 3px !important; 
+                color: black !important; 
                 background: white !important;
+                font-size: 7.5pt !important;
             }
             
             .preview-table tbody tr:nth-child(even) td {
-                background: #fafafa !important;
+                background: #f8fafc !important;
             }
             
-            /* فواصل المواقع */
+            /* فواصل المواقع المدمجة */
             .location-separator { 
-                background: #e0e0e0 !important; 
+                background: #cbd5e1 !important; 
                 color: black !important; 
-                font-weight: bold !important;
+                font-weight: 900 !important; 
+                font-size: 8pt !important;
+                padding: 2px 4px !important;
                 page-break-after: avoid !important;
             }
             
-            /* المبررات المدمجة */
             .merged-cell {
                 background: #fffbeb !important;
                 vertical-align: top !important;
             }
             
-            /* الخلايا القابلة للتعديل - تصبح عادية في الطباعة */
             .editable-cell { 
                 border: none !important; 
-                padding: 4px !important;
+                padding: 0 !important; 
+                font-size: 7.5pt !important;
                 background: transparent !important;
             }
             
-            /* إخفاء inputs الإضافية */
             input { border: none !important; background: transparent !important; }
+            
+            /* تذييل وتوقيعات مكثفة لا تستهلك صفحات إضافية */
+            .preview-signatures-row {
+                margin-top: 10px !important;
+                margin-bottom: 6px !important;
+                padding: 0 15px !important;
+                page-break-inside: avoid !important;
+            }
+            .preview-signatures-row p {
+                font-size: 8.5pt !important;
+                font-weight: 900 !important;
+            }
+            .preview-page-footer {
+                margin-top: 4px !important;
+                padding-top: 2px !important;
+                font-size: 6.5pt !important;
+                page-break-inside: avoid !important;
+            }
         }
         
         /* تنسيق طباعة بطاقة الموظف A4 */
@@ -3868,6 +3887,42 @@
                 setPreviewData(newData);
             };
             
+                        // مشاركة تقرير الموقف أو نتائج الاستعلام عبر تطبيق الواتساب مباشرة
+            const shareViaWhatsApp = () => {
+                if (!previewData || previewData.length === 0) {
+                    alert('⚠️ لا توجد بيانات للمشاركة حالياً.');
+                    return;
+                }
+                let text = `📋 *${previewTitle || 'تقرير الموقف الموحد'}*\n`;
+                text += `🏢 شركة نفط البصرة - شعبة تبريد المركز ومحطة عزل نهر بن عمر\n`;
+                text += `📅 التاريخ: ${dailyReportDate || new Date().toISOString().split('T')[0]}\n`;
+                text += `━━━━━━━━━━━━━━━━━━━━\n`;
+                
+                let count = 0;
+                previewData.forEach(row => {
+                    if (row.type === 'separator') {
+                        text += `\n📌 *${row.content.replace(/━/g, '').trim()}*\n`;
+                    } else if (row.type === 'data') {
+                        count++;
+                        const name = row['الاسم الكامل'] || row['الأسم الكامل'] || row['الاسم'] || '';
+                        const jobNum = row['الرقم الوظيفي'] || row['الرقم'] || '';
+                        const status = row['الموقف اليومي'] || row['طبيعة العمل'] || row['الوظيفة'] || row['العنوان الوظيفي'] || '';
+                        const notes = row['الملاحظات'] || '';
+                        text += `${count}. *${name}* (${jobNum}) : ${status} ${notes ? `[${notes}]` : ''}\n`;
+                    }
+                });
+                text += `━━━━━━━━━━━━━━━━━━━━\n`;
+                text += `📊 إجمالي العدد: ${count} منتسب\n`;
+                text += `✍️ منظم الموقف: ${dataEntryOperator || 'إدارة الشعبة'}\n`;
+                
+                const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+                if (navigator.share && /mobile|android|iphone/i.test(navigator.userAgent)) {
+                    navigator.share({ title: previewTitle || 'موقف الشعبة', text: text }).catch(() => window.open(url, '_blank'));
+                } else {
+                    window.open(url, '_blank');
+                }
+            };
+
             const printPreview = () => {
                 window.print();
             };
@@ -7778,6 +7833,12 @@
                                     <button onClick={() => { setShowPreview(false); setPreviewTitle(''); }} className="px-6 py-3 bg-gray-200 rounded-lg hover:bg-gray-300 font-bold transition">
                                         ← رجوع
                                     </button>
+                                    <button onClick={shareViaWhatsApp}
+                                        className="px-5 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold transition shadow-lg flex items-center gap-1.5">
+                                        <span>📲</span>
+                                        <span>إرسال عبر واتساب</span>
+                                    </button>
+
                                     <button onClick={printPreview}
                                         className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-bold transition shadow-lg">
                                         🖨️ طباعة
