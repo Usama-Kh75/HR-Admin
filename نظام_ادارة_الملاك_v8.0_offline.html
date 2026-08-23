@@ -10,14 +10,15 @@
     <meta name="robots" content="index, follow">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❄️</text></svg>">
     <title>نظام إدارة الملاك - الإصدار v8.0 Standalone (أوفلاين محلي) 💾</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7.26.2/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <!-- محمل المكتبات المزدوج الذكي: يقرأ من مجلد libs المحلي أوفلاين، مع دعم التبديل للإنترنت -->
+    <script src="./libs/react.production.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/react@18/umd/react.production.min.js'"></script>
+    <script src="./libs/react-dom.production.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'"></script>
+    <script src="./libs/babel.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/@babel/standalone@7.26.2/babel.min.js'"></script>
+    <script src="./libs/tailwindcss.js" onerror="this.onerror=null;this.src='https://cdn.tailwindcss.com'"></script>
+    <script src="./libs/xlsx.full.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'"></script>
+    <script src="./libs/exceljs.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js'"></script>
+    <script src="./libs/docx.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js'"></script>
+    <script src="./libs/FileSaver.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js'"></script>
     <style>
         /* ---------------------------------------------------- */
         /* منتقي التاريخ المخصص المتطور (Custom DatePicker) */
