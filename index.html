@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <!-- درع الحماية الفوري الشامل في أول سطر بالصفحة لمنع F12 والتفتيش فورياً -->
+    <!-- درع الحماية الذكي: محظور على العامة وشاشة القفل، ومفتوح تلقائياً لمدير النظام (Admin) للتشخيص والتطوير -->
     <script>
+        window.__IS_ADMIN_DEV_UNLOCKED = false;
         (function() {
             function blockAction(e) {
+                // إذا كان المستخدم مسجلاً كـ مدير نظام (Admin) أو قام بفتح قفل المطورين: يُسمح له بـ F12 والتفتيش فوراً!
+                if (window.__IS_ADMIN_DEV_UNLOCKED === true) {
+                    return true;
+                }
+
                 e = e || window.event;
                 if (!e) return true;
                 
@@ -37,8 +43,9 @@
             window.onkeydown = blockAction;
             document.onkeydown = blockAction;
 
-            // Block Context Menu (Right Click)
+            // Block Context Menu (Right Click) for non-admins
             function blockContext(e) {
+                if (window.__IS_ADMIN_DEV_UNLOCKED === true) return true;
                 if (e && e.preventDefault) e.preventDefault();
                 return false;
             }
@@ -959,6 +966,13 @@
             };
 
             React.useEffect(() => {
+                // السماح بأدوات المطورين F12 وفحص النظام حصرياً لمدير النظام (Admin)
+                if (currentUserRole === 'admin') {
+                    window.__IS_ADMIN_DEV_UNLOCKED = true;
+                } else {
+                    window.__IS_ADMIN_DEV_UNLOCKED = false;
+                }
+
                 // حظر جلب أو استهلاك البيانات السحابية طالما المستخدم في شاشة القفل (حماية من تسريب الذاكرة)
                 if (currentUserRole) {
                     fetchCloudData();
