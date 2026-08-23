@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>نظام إدارة الملاك - الإصدار v7.0 Beta</title>
-    <script src="libs/react.production.min.js"></script>
-    <script src="libs/react-dom.production.min.js"></script>
-    <script src="libs/babel.min.js"></script>
-    <script src="libs/tailwindcss.js"></script>
-    <script src="libs/xlsx.full.min.js"></script>
-    <script src="libs/exceljs.min.js"></script>
-    <script src="libs/docx.js"></script>
-    <script src="libs/FileSaver.min.js"></script>
+    <!-- مكتبات مهيأة خصيصاً للفتح المباشر على الموبايل -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.2/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <style>
         /* ---------------------------------------------------- */
         /* منتقي التاريخ المخصص المتطور (Custom DatePicker) */
@@ -303,32 +304,6 @@
 <body>
     <div id="root"></div>
     <script type="text/babel">
-            // آمن لبيئة أندرويد و content:// URI لمنع الشاشة البيضاء عند حظر localStorage
-            const memoryStorage = {};
-            const safeStorage = {
-                getItem: (key) => {
-                    try {
-                        if (typeof window !== 'undefined' && window.localStorage) {
-                            return window.localStorage.getItem(key);
-                        }
-                    } catch (e) {
-                        console.warn('localStorage getItem fallback:', e);
-                    }
-                    return memoryStorage[key] || null;
-                },
-                setItem: (key, val) => {
-                    try {
-                        if (typeof window !== 'undefined' && window.localStorage) {
-                            window.localStorage.setItem(key, val);
-                            return;
-                        }
-                    } catch (e) {
-                        console.warn('localStorage setItem fallback:', e);
-                    }
-                    memoryStorage[key] = val;
-                }
-            };
-
         const { useState, useMemo, useRef } = React;
         
         const LOCATION_REASONS = {
@@ -438,7 +413,7 @@
                 return str.includes('أموم') || str.includes('اموم') || str.includes('طويل');
             };
             const [staff, setStaff] = useState(() => {
-                const saved = safeStorage.getItem('staffData');
+                const saved = localStorage.getItem('staffData');
                 let parsed = saved ? JSON.parse(saved) : INITIAL_DATA;
                 // إصلاح تلقائي لمعالجة المعرّفات المكررة أو المفقودة لتفادي مشاكل Reconciler في React
                 if (parsed && parsed.length > 0) {
@@ -456,7 +431,7 @@
                             ...emp,
                             id: 'emp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + index
                         }));
-                        safeStorage.setItem('staffData', JSON.stringify(parsed));
+                        localStorage.setItem('staffData', JSON.stringify(parsed));
                     }
                 }
                 return parsed;
@@ -465,7 +440,7 @@
             // حفظ تلقائي عند تغيير البيانات
             React.useEffect(() => {
                 if (staff.length > 0) {
-                    safeStorage.setItem('staffData', JSON.stringify(staff));
+                    localStorage.setItem('staffData', JSON.stringify(staff));
                 }
             }, [staff]);
             const [view, setView] = useState('dashboard');
@@ -473,7 +448,7 @@
             const [selectedSafetyIds, setSelectedSafetyIds] = useState([]);
             const [bulkSafetyDate, setBulkSafetyDate] = useState('');
             const [overtimeIds, setOvertimeIds] = useState(() => {
-                const saved = safeStorage.getItem('overtimeSelectedIds');
+                const saved = localStorage.getItem('overtimeSelectedIds');
                 return saved ? JSON.parse(saved) : [];
             });
             const [previewTitle, setPreviewTitle] = useState('');
@@ -488,11 +463,11 @@
             
 
             const [officialHolidays, setOfficialHolidays] = useState(() => {
-                const saved = safeStorage.getItem('officialHolidaysList');
+                const saved = localStorage.getItem('officialHolidaysList');
                 return saved ? JSON.parse(saved) : [];
             });
             React.useEffect(() => {
-                safeStorage.setItem('officialHolidaysList', JSON.stringify(officialHolidays));
+                localStorage.setItem('officialHolidaysList', JSON.stringify(officialHolidays));
             }, [officialHolidays]);
 
             // حالات نافذة العطل الرسمية والأعياد المتعددة الأيام
@@ -502,19 +477,19 @@
 
             // ===== سجل الإجازات الزمنية بالساعات وساعات الإضافي =====
             const [hourlyLeaveRecords, setHourlyLeaveRecords] = useState(() => {
-                const saved = safeStorage.getItem('hourlyLeaveRecords');
+                const saved = localStorage.getItem('hourlyLeaveRecords');
                 return saved ? JSON.parse(saved) : {};
             });
             const [overtimeHoursRecords, setOvertimeHoursRecords] = useState(() => {
-                const saved = safeStorage.getItem('overtimeHoursRecords');
+                const saved = localStorage.getItem('overtimeHoursRecords');
                 return saved ? JSON.parse(saved) : {};
             });
 
             React.useEffect(() => {
-                safeStorage.setItem('hourlyLeaveRecords', JSON.stringify(hourlyLeaveRecords));
+                localStorage.setItem('hourlyLeaveRecords', JSON.stringify(hourlyLeaveRecords));
             }, [hourlyLeaveRecords]);
             React.useEffect(() => {
-                safeStorage.setItem('overtimeHoursRecords', JSON.stringify(overtimeHoursRecords));
+                localStorage.setItem('overtimeHoursRecords', JSON.stringify(overtimeHoursRecords));
             }, [overtimeHoursRecords]);
 
             const toggleOfficialHolidayDate = (dateStr) => {
@@ -585,10 +560,10 @@
             };
 
             const [dataEntryOperator, setDataEntryOperator] = useState(() => {
-                return safeStorage.getItem('dataEntryOperator') || 'م. أسامة خليل هاشم';
+                return localStorage.getItem('dataEntryOperator') || 'م. أسامة خليل هاشم';
             });
             React.useEffect(() => {
-                safeStorage.setItem('dataEntryOperator', dataEntryOperator);
+                localStorage.setItem('dataEntryOperator', dataEntryOperator);
             }, [dataEntryOperator]);
 
             // ===== موقف الفترة (من - إلى) =====
@@ -655,17 +630,17 @@
                 setDailyReportDate(`${yyyy}-${mm}-${dd}`);
             };
             const [dailyStatusOverrides, setDailyStatusOverrides] = useState(() => {
-                const saved = safeStorage.getItem('dailyStatusOverrides');
+                const saved = localStorage.getItem('dailyStatusOverrides');
                 return saved ? JSON.parse(saved) : {};
             });
             const [anchorDate, setAnchorDate] = useState(() => {
-                return safeStorage.getItem('shiftAnchorDate') || '2026-07-05';
+                return localStorage.getItem('shiftAnchorDate') || '2026-07-05';
             });
             const [threeShiftAnchorSquad, setThreeShiftAnchorSquad] = useState(() => {
-                return safeStorage.getItem('threeShiftAnchorSquad') || 'A';
+                return localStorage.getItem('threeShiftAnchorSquad') || 'A';
             });
             const [twoShiftAnchorSquad, setTwoShiftAnchorSquad] = useState(() => {
-                return safeStorage.getItem('twoShiftAnchorSquad') || 'A';
+                return localStorage.getItem('twoShiftAnchorSquad') || 'A';
             });
             const [dailyReportDate, setDailyReportDate] = useState(() => {
                 const today = new Date();
@@ -676,13 +651,13 @@
             });
 
             React.useEffect(() => {
-                safeStorage.setItem('dailyStatusOverrides', JSON.stringify(dailyStatusOverrides));
+                localStorage.setItem('dailyStatusOverrides', JSON.stringify(dailyStatusOverrides));
             }, [dailyStatusOverrides]);
 
             React.useEffect(() => {
-                safeStorage.setItem('shiftAnchorDate', anchorDate);
-                safeStorage.setItem('threeShiftAnchorSquad', threeShiftAnchorSquad);
-                safeStorage.setItem('twoShiftAnchorSquad', twoShiftAnchorSquad);
+                localStorage.setItem('shiftAnchorDate', anchorDate);
+                localStorage.setItem('threeShiftAnchorSquad', threeShiftAnchorSquad);
+                localStorage.setItem('twoShiftAnchorSquad', twoShiftAnchorSquad);
             }, [anchorDate, threeShiftAnchorSquad, twoShiftAnchorSquad]);
 
             // ----------------------------------------------------
@@ -691,11 +666,11 @@
             
             // ===== نظام إدارة الصلاحيات وكلمات المرور (RBAC System) =====
             const [passwordsConfig, setPasswordsConfig] = useState(() => {
-                const saved = safeStorage.getItem('passwordsConfig');
+                const saved = localStorage.getItem('passwordsConfig');
                 return saved ? JSON.parse(saved) : { admin: '1975', operator: '2026', viewer: '1234' };
             });
             React.useEffect(() => {
-                safeStorage.setItem('passwordsConfig', JSON.stringify(passwordsConfig));
+                localStorage.setItem('passwordsConfig', JSON.stringify(passwordsConfig));
             }, [passwordsConfig]);
 
             const [currentUserRole, setCurrentUserRole] = useState('admin');
@@ -750,7 +725,7 @@
                     viewer: newViewerPin.trim() || passwordsConfig.viewer
                 };
                 setPasswordsConfig(updated);
-                safeStorage.setItem('passwordsConfig', JSON.stringify(updated));
+                localStorage.setItem('passwordsConfig', JSON.stringify(updated));
                 alert('✅ تم تحديث وتأمين كلمات المرور بنجاح!');
                 setShowChangePasswordModal(false);
                 setNewAdminPin('');
@@ -815,43 +790,43 @@
                 isSyncingRef.current = true;
                 if (bundle.staffData && Array.isArray(bundle.staffData)) {
                     setStaff(bundle.staffData);
-                    safeStorage.setItem('staffData', JSON.stringify(bundle.staffData));
+                    localStorage.setItem('staffData', JSON.stringify(bundle.staffData));
                 }
                 if (bundle.officialHolidaysList && Array.isArray(bundle.officialHolidaysList)) {
                     setOfficialHolidays(bundle.officialHolidaysList);
-                    safeStorage.setItem('officialHolidaysList', JSON.stringify(bundle.officialHolidaysList));
+                    localStorage.setItem('officialHolidaysList', JSON.stringify(bundle.officialHolidaysList));
                 }
                 if (bundle.hourlyLeaveRecords) {
                     setHourlyLeaveRecords(bundle.hourlyLeaveRecords);
-                    safeStorage.setItem('hourlyLeaveRecords', JSON.stringify(bundle.hourlyLeaveRecords));
+                    localStorage.setItem('hourlyLeaveRecords', JSON.stringify(bundle.hourlyLeaveRecords));
                 }
                 if (bundle.overtimeHoursRecords) {
                     setOvertimeHoursRecords(bundle.overtimeHoursRecords);
-                    safeStorage.setItem('overtimeHoursRecords', JSON.stringify(bundle.overtimeHoursRecords));
+                    localStorage.setItem('overtimeHoursRecords', JSON.stringify(bundle.overtimeHoursRecords));
                 }
                 if (bundle.dailyStatusOverrides) {
                     setDailyStatusOverrides(bundle.dailyStatusOverrides);
-                    safeStorage.setItem('dailyStatusOverrides', JSON.stringify(bundle.dailyStatusOverrides));
+                    localStorage.setItem('dailyStatusOverrides', JSON.stringify(bundle.dailyStatusOverrides));
                 }
                 if (bundle.shiftAnchorDate) {
                     setAnchorDate(bundle.shiftAnchorDate);
-                    safeStorage.setItem('shiftAnchorDate', bundle.shiftAnchorDate);
+                    localStorage.setItem('shiftAnchorDate', bundle.shiftAnchorDate);
                 }
                 if (bundle.threeShiftAnchorSquad) {
                     setThreeShiftAnchorSquad(bundle.threeShiftAnchorSquad);
-                    safeStorage.setItem('threeShiftAnchorSquad', bundle.threeShiftAnchorSquad);
+                    localStorage.setItem('threeShiftAnchorSquad', bundle.threeShiftAnchorSquad);
                 }
                 if (bundle.twoShiftAnchorSquad) {
                     setTwoShiftAnchorSquad(bundle.twoShiftAnchorSquad);
-                    safeStorage.setItem('twoShiftAnchorSquad', bundle.twoShiftAnchorSquad);
+                    localStorage.setItem('twoShiftAnchorSquad', bundle.twoShiftAnchorSquad);
                 }
                 if (bundle.dataEntryOperator) {
                     setDataEntryOperator(bundle.dataEntryOperator);
-                    safeStorage.setItem('dataEntryOperator', bundle.dataEntryOperator);
+                    localStorage.setItem('dataEntryOperator', bundle.dataEntryOperator);
                 }
                 if (bundle.overtimeSelectedIds) {
                     setOvertimeIds(bundle.overtimeSelectedIds);
-                    safeStorage.setItem('overtimeSelectedIds', JSON.stringify(bundle.overtimeSelectedIds));
+                    localStorage.setItem('overtimeSelectedIds', JSON.stringify(bundle.overtimeSelectedIds));
                 }
                 setTimeout(() => { isSyncingRef.current = false; }, 500);
             };
@@ -1538,12 +1513,11 @@
             };
             
             // ===== المزامنة والنسخ الاحتياطي ومؤشرات الأمان =====
-            const [lastBackupDate, setLastBackupDate] = useState(() => safeStorage.getItem('lastBackupDate'));
+            const [lastBackupDate, setLastBackupDate] = useState(() => localStorage.getItem('lastBackupDate'));
             const [showDueSafetyOnly, setShowDueSafetyOnly] = useState(false);
             const [showSizeDetails, setShowSizeDetails] = useState(false);
             const [showMergeModal, setShowMergeModal] = useState(false);
             const [incomingStaff, setIncomingStaff] = useState([]);
-            const [incomingBundle, setIncomingBundle] = useState(null);
             const [showPasteModal, setShowPasteModal] = useState(false);
             const [pastedJsonText, setPastedJsonText] = useState('');
             const [profileToPrint, setProfileToPrint] = useState(null);
@@ -1611,7 +1585,7 @@
                 });
                 if (migrated) {
                     setStaff(migratedStaff);
-                    safeStorage.setItem('staffData', JSON.stringify(migratedStaff));
+                    localStorage.setItem('staffData', JSON.stringify(migratedStaff));
                 }
             }, [staff]);
 
@@ -1695,42 +1669,6 @@
                 return { added, updated, totalIncoming: incoming.length };
             };
 
-                        const commitBundleMetadata = (bundle) => {
-                if (!bundle || typeof bundle !== 'object') return;
-                if (bundle.officialHolidaysList && Array.isArray(bundle.officialHolidaysList)) {
-                    setOfficialHolidays(bundle.officialHolidaysList);
-                    safeStorage.setItem('officialHolidaysList', JSON.stringify(bundle.officialHolidaysList));
-                }
-                if (bundle.hourlyLeaveRecords) {
-                    setHourlyLeaveRecords(bundle.hourlyLeaveRecords);
-                    safeStorage.setItem('hourlyLeaveRecords', JSON.stringify(bundle.hourlyLeaveRecords));
-                }
-                if (bundle.overtimeHoursRecords) {
-                    setOvertimeHoursRecords(bundle.overtimeHoursRecords);
-                    safeStorage.setItem('overtimeHoursRecords', JSON.stringify(bundle.overtimeHoursRecords));
-                }
-                if (bundle.dailyStatusOverrides) {
-                    setDailyStatusOverrides(bundle.dailyStatusOverrides);
-                    safeStorage.setItem('dailyStatusOverrides', JSON.stringify(bundle.dailyStatusOverrides));
-                }
-                if (bundle.shiftAnchorDate) {
-                    setAnchorDate(bundle.shiftAnchorDate);
-                    safeStorage.setItem('shiftAnchorDate', bundle.shiftAnchorDate);
-                }
-                if (bundle.threeShiftAnchorSquad) {
-                    setThreeShiftAnchorSquad(bundle.threeShiftAnchorSquad);
-                    safeStorage.setItem('threeShiftAnchorSquad', bundle.threeShiftAnchorSquad);
-                }
-                if (bundle.twoShiftAnchorSquad) {
-                    setTwoShiftAnchorSquad(bundle.twoShiftAnchorSquad);
-                    safeStorage.setItem('twoShiftAnchorSquad', bundle.twoShiftAnchorSquad);
-                }
-                if (bundle.dataEntryOperator) {
-                    setDataEntryOperator(bundle.dataEntryOperator);
-                    safeStorage.setItem('dataEntryOperator', bundle.dataEntryOperator);
-                }
-            };
-
             const handleSmartMerge = (incoming) => {
                 const analysis = analyzeMerge(incoming, staff);
                 
@@ -1771,10 +1709,9 @@
                     mergedList.push(emp);
                 });
 
-                commitBundleMetadata(incomingBundle);
                 const sorted = sortByUnit(mergedList);
                 setStaff(sorted);
-                safeStorage.setItem('staffData', JSON.stringify(sorted));
+                localStorage.setItem('staffData', JSON.stringify(sorted));
                 
                 setShowWelcome(false);
                 setShowMergeModal(false);
@@ -1784,7 +1721,6 @@
             };
 
             const handleFullOverwrite = (incoming) => {
-                commitBundleMetadata(incomingBundle);
                 const sorted = sortByUnit(incoming);
                 setStaff(sorted);
                 setShowWelcome(false);
@@ -2508,39 +2444,23 @@
                             let incomingList = [];
                             if (Array.isArray(data)) {
                                 incomingList = data;
-                            } else if (data && (Array.isArray(data.staff) || Array.isArray(data.staffData))) {
-                                incomingList = data.staff || data.staffData;
-                                if (data.officialHolidaysList && Array.isArray(data.officialHolidaysList)) {
-                                    setOfficialHolidays(data.officialHolidaysList);
-                                    safeStorage.setItem('officialHolidaysList', JSON.stringify(data.officialHolidaysList));
-                                }
-                                if (data.hourlyLeaveRecords) {
-                                    setHourlyLeaveRecords(data.hourlyLeaveRecords);
-                                    safeStorage.setItem('hourlyLeaveRecords', JSON.stringify(data.hourlyLeaveRecords));
-                                }
-                                if (data.overtimeHoursRecords) {
-                                    setOvertimeHoursRecords(data.overtimeHoursRecords);
-                                    safeStorage.setItem('overtimeHoursRecords', JSON.stringify(data.overtimeHoursRecords));
-                                }
+                            } else if (data && Array.isArray(data.staff)) {
+                                incomingList = data.staff;
                                 if (data.dailyStatusOverrides) {
                                     setDailyStatusOverrides(data.dailyStatusOverrides);
-                                    safeStorage.setItem('dailyStatusOverrides', JSON.stringify(data.dailyStatusOverrides));
+                                    localStorage.setItem('dailyStatusOverrides', JSON.stringify(data.dailyStatusOverrides));
                                 }
                                 if (data.shiftAnchorDate) {
                                     setAnchorDate(data.shiftAnchorDate);
-                                    safeStorage.setItem('shiftAnchorDate', data.shiftAnchorDate);
+                                    localStorage.setItem('shiftAnchorDate', data.shiftAnchorDate);
                                 }
                                 if (data.threeShiftAnchorSquad) {
                                     setThreeShiftAnchorSquad(data.threeShiftAnchorSquad);
-                                    safeStorage.setItem('threeShiftAnchorSquad', data.threeShiftAnchorSquad);
+                                    localStorage.setItem('threeShiftAnchorSquad', data.threeShiftAnchorSquad);
                                 }
                                 if (data.twoShiftAnchorSquad) {
                                     setTwoShiftAnchorSquad(data.twoShiftAnchorSquad);
-                                    safeStorage.setItem('twoShiftAnchorSquad', data.twoShiftAnchorSquad);
-                                }
-                                if (data.dataEntryOperator) {
-                                    setDataEntryOperator(data.dataEntryOperator);
-                                    safeStorage.setItem('dataEntryOperator', data.dataEntryOperator);
+                                    localStorage.setItem('twoShiftAnchorSquad', data.twoShiftAnchorSquad);
                                 }
                             } else {
                                 throw new Error('تنسيق ملف النسخة الاحتياطية غير مدعوم');
@@ -2912,16 +2832,10 @@
                         version: 'v7.0 Beta',
                         exportDate: new Date().toISOString(),
                         staff: staff,
-                        staffData: staff,
-                        officialHolidaysList: officialHolidays,
-                        hourlyLeaveRecords: hourlyLeaveRecords,
-                        overtimeHoursRecords: overtimeHoursRecords,
                         dailyStatusOverrides: dailyStatusOverrides,
                         shiftAnchorDate: anchorDate,
                         threeShiftAnchorSquad: threeShiftAnchorSquad,
-                        twoShiftAnchorSquad: twoShiftAnchorSquad,
-                        dataEntryOperator: dataEntryOperator,
-                        overtimeSelectedIds: overtimeIds
+                        twoShiftAnchorSquad: twoShiftAnchorSquad
                     };
                     const dataStr = JSON.stringify(backupData, null, 2);
                     const dataBlob = new Blob([dataStr], {type: 'application/json'});
@@ -2934,7 +2848,7 @@
                     URL.revokeObjectURL(url);
                     
                     const today = new Date().toISOString();
-                    safeStorage.setItem('lastBackupDate', today);
+                    localStorage.setItem('lastBackupDate', today);
                     setLastBackupDate(today);
                     alert('✅ تم تصدير قاعدة البيانات (JSON) بنجاح كنسخة احتياطية!');
                 } catch (error) {
@@ -3632,7 +3546,7 @@
                 XLSX.utils.book_append_sheet(wb, ws, fileName);
                 XLSX.writeFile(wb, `${fileName}.xlsx`);
                 const today = new Date().toISOString();
-                safeStorage.setItem('lastBackupDate', today);
+                localStorage.setItem('lastBackupDate', today);
                 setLastBackupDate(today);
                 setShowPreview(false);
             };
@@ -3922,7 +3836,7 @@
                     a.click();
                     window.URL.revokeObjectURL(url);
                     const today = new Date().toISOString();
-                    safeStorage.setItem('lastBackupDate', today);
+                    localStorage.setItem('lastBackupDate', today);
                     setLastBackupDate(today);
                     setShowPreview(false);
                 } catch (error) {
@@ -4018,7 +3932,7 @@
                                     {/* زر إغلاق بارز */}
                                     <div className="mt-4 animate-fadeInUp-delay1">
                                         <button 
-                                            onClick={() => setShowWelcome(false)}
+                                            onClick={() => setShowLoginModal(true)}
                                             className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-bold text-lg transition-all transform hover:scale-105 shadow-xl border-2 border-white border-opacity-30">
                                             ✓ ابدأ العمل الآن
                                         </button>
@@ -4045,23 +3959,54 @@
                                 </p>
                             </div>
                             
-                            {syncStatus.connected && (
-                                <div 
-                                    onClick={() => setShowSyncModal(true)}
-                                    className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border cursor-pointer transition shadow-md flex-shrink-0 bg-emerald-950/70 border-emerald-400/40 text-emerald-200 hover:bg-emerald-900/80"
-                                    title="اضغط لعرض تفاصيل المزامنة ورابط أجهزة الشعبة"
-                                >
-                                    <span className="relative flex h-2.5 w-2.5">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                                    </span>
-                                    <span className="text-xs font-bold">
-                                        🟢 السيرفر المحلي نشط ({syncStatus.ip || 'Local'})
-                                    </span>
+                            <div 
+                                onClick={() => setShowSyncModal(true)}
+                                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border cursor-pointer transition shadow-md flex-shrink-0 ${
+                                    syncStatus.connected 
+                                        ? 'bg-emerald-950/70 border-emerald-400/40 text-emerald-200 hover:bg-emerald-900/80' 
+                                        : 'bg-amber-950/70 border-amber-400/30 text-amber-200 hover:bg-amber-900/80'
+                                }`}
+                                title="اضغط لعرض تفاصيل المزامنة ورابط أجهزة الشعبة"
+                            >
+                                <span className="relative flex h-2.5 w-2.5">
+                                    {syncStatus.connected ? (
+                                        <>
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                        </>
+                                    ) : (
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                                    )}
+                                </span>
+                                <span className="text-xs font-bold">
+                                    {syncStatus.connected ? `🟢 السيرفر المحلي نشط (${syncStatus.ip || 'Local'})` : '🟡 أوفلاين محلي'}
+                                </span>
+                            </div>
+
+                            {/* شريط التحكم بالصفة وكلمات المرور */}
+                            {currentUserRole && (
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full border border-white/20 text-xs font-extrabold text-white shadow-sm">
+                                        <span>{currentUserRole === 'admin' ? '👑 مدير النظام' : (currentUserRole === 'operator' ? '✍️ إداري مُدخل' : '👁️ مستعرض')}</span>
+                                    </div>
+                                    {currentUserRole === 'admin' && (
+                                        <button
+                                            onClick={() => setShowChangePasswordModal(true)}
+                                            className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-full text-xs font-bold shadow transition flex items-center gap-1"
+                                            title="تغيير كلمات المرور للنظام"
+                                        >
+                                            🔑 كلمات المرور
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={handleLogout}
+                                        className="px-3 py-1 bg-red-500/80 hover:bg-red-600 text-white rounded-full text-xs font-bold shadow transition flex items-center gap-1"
+                                        title="تسجيل الخروج أو تبديل الصفة"
+                                    >
+                                        🚪 خروج
+                                    </button>
                                 </div>
                             )}
-
-
                         </div>
                     </header>
                     
@@ -6030,7 +5975,7 @@
                                                 onClick={() => {
                                                     if (confirm('❓ هل أنت متأكد من إفراغ سلة العمل الإضافي وتصفير القائمة بالكامل؟')) {
                                                         setOvertimeIds([]);
-                                                        safeStorage.setItem('overtimeSelectedIds', JSON.stringify([]));
+                                                        localStorage.setItem('overtimeSelectedIds', JSON.stringify([]));
                                                     }
                                                 }}
                                                 className="bg-teal-700 hover:bg-teal-800 text-teal-100 px-3 py-2 font-bold rounded-lg text-xs transition cursor-pointer"
@@ -6207,7 +6152,7 @@
                                                                                         onClick={() => {
                                                                                             const updated = overtimeIds.filter(id => id !== s.id);
                                                                                             setOvertimeIds(updated);
-                                                                                            safeStorage.setItem('overtimeSelectedIds', JSON.stringify(updated));
+                                                                                            localStorage.setItem('overtimeSelectedIds', JSON.stringify(updated));
                                                                                         }}
                                                                                         className="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer"
                                                                                     >
@@ -6218,7 +6163,7 @@
                                                                                         onClick={() => {
                                                                                             const updated = [...overtimeIds, s.id];
                                                                                             setOvertimeIds(updated);
-                                                                                            safeStorage.setItem('overtimeSelectedIds', JSON.stringify(updated));
+                                                                                            localStorage.setItem('overtimeSelectedIds', JSON.stringify(updated));
                                                                                         }}
                                                                                         className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer"
                                                                                     >
@@ -6608,7 +6553,7 @@
                                                                 return emp;
                                                             });
                                                             setStaff(updatedStaff);
-                                                            safeStorage.setItem('staffData', JSON.stringify(updatedStaff));
+                                                            localStorage.setItem('staffData', JSON.stringify(updatedStaff));
                                                             setSelectedSafetyIds([]);
                                                             alert('✅ تم تحديث تاريخ التجهيز للموظفين المحددين بنجاح!');
                                                         }

@@ -1543,7 +1543,6 @@
             const [showSizeDetails, setShowSizeDetails] = useState(false);
             const [showMergeModal, setShowMergeModal] = useState(false);
             const [incomingStaff, setIncomingStaff] = useState([]);
-            const [incomingBundle, setIncomingBundle] = useState(null);
             const [showPasteModal, setShowPasteModal] = useState(false);
             const [pastedJsonText, setPastedJsonText] = useState('');
             const [profileToPrint, setProfileToPrint] = useState(null);
@@ -1695,42 +1694,6 @@
                 return { added, updated, totalIncoming: incoming.length };
             };
 
-                        const commitBundleMetadata = (bundle) => {
-                if (!bundle || typeof bundle !== 'object') return;
-                if (bundle.officialHolidaysList && Array.isArray(bundle.officialHolidaysList)) {
-                    setOfficialHolidays(bundle.officialHolidaysList);
-                    safeStorage.setItem('officialHolidaysList', JSON.stringify(bundle.officialHolidaysList));
-                }
-                if (bundle.hourlyLeaveRecords) {
-                    setHourlyLeaveRecords(bundle.hourlyLeaveRecords);
-                    safeStorage.setItem('hourlyLeaveRecords', JSON.stringify(bundle.hourlyLeaveRecords));
-                }
-                if (bundle.overtimeHoursRecords) {
-                    setOvertimeHoursRecords(bundle.overtimeHoursRecords);
-                    safeStorage.setItem('overtimeHoursRecords', JSON.stringify(bundle.overtimeHoursRecords));
-                }
-                if (bundle.dailyStatusOverrides) {
-                    setDailyStatusOverrides(bundle.dailyStatusOverrides);
-                    safeStorage.setItem('dailyStatusOverrides', JSON.stringify(bundle.dailyStatusOverrides));
-                }
-                if (bundle.shiftAnchorDate) {
-                    setAnchorDate(bundle.shiftAnchorDate);
-                    safeStorage.setItem('shiftAnchorDate', bundle.shiftAnchorDate);
-                }
-                if (bundle.threeShiftAnchorSquad) {
-                    setThreeShiftAnchorSquad(bundle.threeShiftAnchorSquad);
-                    safeStorage.setItem('threeShiftAnchorSquad', bundle.threeShiftAnchorSquad);
-                }
-                if (bundle.twoShiftAnchorSquad) {
-                    setTwoShiftAnchorSquad(bundle.twoShiftAnchorSquad);
-                    safeStorage.setItem('twoShiftAnchorSquad', bundle.twoShiftAnchorSquad);
-                }
-                if (bundle.dataEntryOperator) {
-                    setDataEntryOperator(bundle.dataEntryOperator);
-                    safeStorage.setItem('dataEntryOperator', bundle.dataEntryOperator);
-                }
-            };
-
             const handleSmartMerge = (incoming) => {
                 const analysis = analyzeMerge(incoming, staff);
                 
@@ -1771,7 +1734,6 @@
                     mergedList.push(emp);
                 });
 
-                commitBundleMetadata(incomingBundle);
                 const sorted = sortByUnit(mergedList);
                 setStaff(sorted);
                 safeStorage.setItem('staffData', JSON.stringify(sorted));
@@ -1784,7 +1746,6 @@
             };
 
             const handleFullOverwrite = (incoming) => {
-                commitBundleMetadata(incomingBundle);
                 const sorted = sortByUnit(incoming);
                 setStaff(sorted);
                 setShowWelcome(false);

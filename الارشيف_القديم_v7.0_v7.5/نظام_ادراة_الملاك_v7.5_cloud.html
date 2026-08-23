@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة الملاك - الإصدار v7.0 Beta</title>
+    <title>نظام إدارة الملاك - الإصدار v7.5 Cloud Edition Beta ☁️</title>
     <script src="libs/react.production.min.js"></script>
     <script src="libs/react-dom.production.min.js"></script>
     <script src="libs/babel.min.js"></script>
@@ -698,7 +698,7 @@
                 safeStorage.setItem('passwordsConfig', JSON.stringify(passwordsConfig));
             }, [passwordsConfig]);
 
-            const [currentUserRole, setCurrentUserRole] = useState('admin');
+            const [currentUserRole, setCurrentUserRole] = useState(null);
 
             const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
             const [loginInputRole, setLoginInputRole] = useState('operator');
@@ -2909,7 +2909,7 @@
             const exportBackupJSON = () => {
                 try {
                     const backupData = {
-                        version: 'v7.0 Beta',
+                        version: 'v7.5 Cloud Edition Beta',
                         exportDate: new Date().toISOString(),
                         staff: staff,
                         staffData: staff,
@@ -4013,12 +4013,12 @@
                                     <div className="inline-block px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full shadow-md">
                                         <p className="text-sm font-bold">👨‍💻 تطوير: م. أسامة خليل هاشم</p>
                                     </div>
-                                    <p className="text-xs text-blue-300 mt-2 opacity-75 font-semibold">الإصدار v7.0 Beta • 2026</p>
+                                    <p className="text-xs text-blue-300 mt-2 opacity-75 font-semibold">الإصدار v7.5 Cloud Edition Beta • 2026</p>
                                     
                                     {/* زر إغلاق بارز */}
                                     <div className="mt-4 animate-fadeInUp-delay1">
                                         <button 
-                                            onClick={() => setShowWelcome(false)}
+                                            onClick={() => setShowLoginModal(true)}
                                             className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-bold text-lg transition-all transform hover:scale-105 shadow-xl border-2 border-white border-opacity-30">
                                             ✓ ابدأ العمل الآن
                                         </button>
@@ -4045,23 +4045,54 @@
                                 </p>
                             </div>
                             
-                            {syncStatus.connected && (
-                                <div 
-                                    onClick={() => setShowSyncModal(true)}
-                                    className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border cursor-pointer transition shadow-md flex-shrink-0 bg-emerald-950/70 border-emerald-400/40 text-emerald-200 hover:bg-emerald-900/80"
-                                    title="اضغط لعرض تفاصيل المزامنة ورابط أجهزة الشعبة"
-                                >
-                                    <span className="relative flex h-2.5 w-2.5">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                                    </span>
-                                    <span className="text-xs font-bold">
-                                        🟢 السيرفر المحلي نشط ({syncStatus.ip || 'Local'})
-                                    </span>
+                            <div 
+                                onClick={() => setShowSyncModal(true)}
+                                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border cursor-pointer transition shadow-md flex-shrink-0 ${
+                                    syncStatus.connected 
+                                        ? 'bg-emerald-950/70 border-emerald-400/40 text-emerald-200 hover:bg-emerald-900/80' 
+                                        : 'bg-amber-950/70 border-amber-400/30 text-amber-200 hover:bg-amber-900/80'
+                                }`}
+                                title="اضغط لعرض تفاصيل المزامنة ورابط أجهزة الشعبة"
+                            >
+                                <span className="relative flex h-2.5 w-2.5">
+                                    {syncStatus.connected ? (
+                                        <>
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                        </>
+                                    ) : (
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                                    )}
+                                </span>
+                                <span className="text-xs font-bold">
+                                    {syncStatus.connected ? `🟢 السيرفر المحلي نشط (${syncStatus.ip || 'Local'})` : '🟡 أوفلاين محلي'}
+                                </span>
+                            </div>
+
+                            {/* شريط التحكم بالصفة وكلمات المرور */}
+                            {currentUserRole && (
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full border border-white/20 text-xs font-extrabold text-white shadow-sm">
+                                        <span>{currentUserRole === 'admin' ? '👑 مدير النظام' : (currentUserRole === 'operator' ? '✍️ إداري مُدخل' : '👁️ مستعرض')}</span>
+                                    </div>
+                                    {currentUserRole === 'admin' && (
+                                        <button
+                                            onClick={() => setShowChangePasswordModal(true)}
+                                            className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-full text-xs font-bold shadow transition flex items-center gap-1"
+                                            title="تغيير كلمات المرور للنظام"
+                                        >
+                                            🔑 كلمات المرور
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={handleLogout}
+                                        className="px-3 py-1 bg-red-500/80 hover:bg-red-600 text-white rounded-full text-xs font-bold shadow transition flex items-center gap-1"
+                                        title="تسجيل الخروج أو تبديل الصفة"
+                                    >
+                                        🚪 خروج
+                                    </button>
                                 </div>
                             )}
-
-
                         </div>
                     </header>
                     
@@ -8294,7 +8325,7 @@
                     
                     <footer className="bg-gray-800 text-white mt-12 py-6 text-center">
                         <p>© 2026 شركة نفط البصرة - شعبة تبريد المركز ومحطة عزل نهر بن عمر</p>
-                        <p className="text-xs text-blue-300 mt-2">👨‍💻 إعداد: المهندس أسامة خليل هاشم | الإصدار v7.0 Beta</p>
+                        <p className="text-xs text-blue-300 mt-2">👨‍💻 إعداد: المهندس أسامة خليل هاشم | الإصدار v7.5 Cloud Edition Beta</p>
                     </footer>
                 </div>
             );
