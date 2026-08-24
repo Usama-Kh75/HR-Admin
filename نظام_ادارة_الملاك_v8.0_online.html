@@ -1,6 +1,60 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+    <!-- درع الحماية الذكي: محظور على العامة وشاشة القفل، ومفتوح تلقائياً لمدير النظام (Admin) للتشخيص والتطوير -->
+    <script>
+        window.__IS_ADMIN_DEV_UNLOCKED = false;
+        (function() {
+            function blockAction(e) {
+                // إذا كان المستخدم مسجلاً كـ مدير نظام (Admin) أو قام بفتح قفل المطورين: يُسمح له بـ F12 والتفتيش فوراً!
+                if (window.__IS_ADMIN_DEV_UNLOCKED === true) {
+                    return true;
+                }
+
+                e = e || window.event;
+                if (!e) return true;
+                
+                // Block F12 (code 123)
+                if (e.key === 'F12' || e.keyCode === 123 || e.which === 123) {
+                    if (e.preventDefault) e.preventDefault();
+                    if (e.stopPropagation) e.stopPropagation();
+                    e.returnValue = false;
+                    return false;
+                }
+                // Block Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+Shift+K
+                if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67 || e.keyCode === 75 || ['I','i','J','j','C','c','K','k'].includes(e.key))) {
+                    if (e.preventDefault) e.preventDefault();
+                    if (e.stopPropagation) e.stopPropagation();
+                    e.returnValue = false;
+                    return false;
+                }
+                // Block Ctrl+U (View Source)
+                if (e.ctrlKey && (e.keyCode === 85 || e.key === 'u' || e.key === 'U')) {
+                    if (e.preventDefault) e.preventDefault();
+                    if (e.stopPropagation) e.stopPropagation();
+                    e.returnValue = false;
+                    return false;
+                }
+            }
+
+            // Bind to all capture stages immediately
+            window.addEventListener('keydown', blockAction, true);
+            document.addEventListener('keydown', blockAction, true);
+            window.onkeydown = blockAction;
+            document.onkeydown = blockAction;
+
+            // Block Context Menu (Right Click) for non-admins
+            function blockContext(e) {
+                if (window.__IS_ADMIN_DEV_UNLOCKED === true) return true;
+                if (e && e.preventDefault) e.preventDefault();
+                return false;
+            }
+            window.addEventListener('contextmenu', blockContext, true);
+            document.addEventListener('contextmenu', blockContext, true);
+            window.oncontextmenu = blockContext;
+            document.oncontextmenu = blockContext;
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1e1b4b">
@@ -321,6 +375,8 @@
             animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
     </style>
+
+
 
 
 
@@ -857,10 +913,15 @@
                     if (res.ok) {
                         const cloudData = await res.json();
                         if (cloudData && typeof cloudData === 'object') {
-                            if (cloudData.lastCloudUpdate && cloudData.lastCloudUpdate !== lastCloudTimeRef.current) {
-                                lastCloudTimeRef.current = cloudData.lastCloudUpdate;
-                                if (cloudData.staffData && Array.isArray(cloudData.staffData) && cloudData.staffData.length > 0) {
-                                    applyDataBundleToState(cloudData);
+                            if (cloudData.lastCloudUpdate) {
+                                const cloudTime = new Date(cloudData.lastCloudUpdate).getTime();
+                                const localTime = lastCloudTimeRef.current ? new Date(lastCloudTimeRef.current).getTime() : 0;
+                                // تحديث الحالة فقط إذا كانت البيانات السحابية أحدث من آخر تعديل محلي
+                                if (!lastCloudTimeRef.current || cloudTime > localTime) {
+                                    lastCloudTimeRef.current = cloudData.lastCloudUpdate;
+                                    if (cloudData.staffData && Array.isArray(cloudData.staffData) && cloudData.staffData.length > 0) {
+                                        applyDataBundleToState(cloudData);
+                                    }
                                 }
                             }
                             setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
@@ -877,9 +938,9 @@
             const pushDataToCloud = async (bundle = null) => {
                 try {
                     setCloudSyncStatus(prev => ({ ...prev, syncing: true }));
-                    const nowIso = new Date().toISOString();
+                    const nowIso = (bundle && bundle.lastCloudUpdate) ? bundle.lastCloudUpdate : new Date().toISOString();
                     lastCloudTimeRef.current = nowIso;
-                    const dataPayload = bundle || {
+                    const dataPayload = bundle ? { ...bundle, lastCloudUpdate: nowIso } : {
                         staffData: staff,
                         officialHolidaysList: officialHolidays,
                         hourlyLeaveRecords: hourlyLeaveRecords,
@@ -894,12 +955,11 @@
                         pendingDeletionRequest: pendingDeletionRequest
                     };
 
-                    // بث سريع مباشر عبر fetch
+                    // بث سريع مباشر عبر fetch بدون keepalive (لتفادي حظر المتصفح للحزم الأكبر من 64KB)
                     const res = await fetch(FIREBASE_DB_URL, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dataPayload),
-                        keepalive: true // يضمن استمرار إرسال البيانات حتى لو أغلق المستخدم المتصفح فوراً
+                        body: JSON.stringify(dataPayload)
                     });
                     if (res.ok) {
                         setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
@@ -910,10 +970,20 @@
             };
 
             React.useEffect(() => {
-                fetchCloudData();
-                const interval = setInterval(fetchCloudData, 5000);
-                return () => clearInterval(interval);
-            }, []);
+                // السماح بأدوات المطورين F12 وفحص النظام حصرياً لمدير النظام (Admin)
+                if (currentUserRole === 'admin') {
+                    window.__IS_ADMIN_DEV_UNLOCKED = true;
+                } else {
+                    window.__IS_ADMIN_DEV_UNLOCKED = false;
+                }
+
+                // حظر جلب أو استهلاك البيانات السحابية طالما المستخدم في شاشة القفل (حماية من تسريب الذاكرة)
+                if (currentUserRole) {
+                    fetchCloudData();
+                    const interval = setInterval(fetchCloudData, 5000);
+                    return () => clearInterval(interval);
+                }
+            }, [currentUserRole]);
             const [showSyncModal, setShowSyncModal] = useState(false);
             const serverVersionRef = React.useRef(0);
             const isSyncingRef = React.useRef(false);

@@ -913,10 +913,15 @@
                     if (res.ok) {
                         const cloudData = await res.json();
                         if (cloudData && typeof cloudData === 'object') {
-                            if (cloudData.lastCloudUpdate && cloudData.lastCloudUpdate !== lastCloudTimeRef.current) {
-                                lastCloudTimeRef.current = cloudData.lastCloudUpdate;
-                                if (cloudData.staffData && Array.isArray(cloudData.staffData) && cloudData.staffData.length > 0) {
-                                    applyDataBundleToState(cloudData);
+                            if (cloudData.lastCloudUpdate) {
+                                const cloudTime = new Date(cloudData.lastCloudUpdate).getTime();
+                                const localTime = lastCloudTimeRef.current ? new Date(lastCloudTimeRef.current).getTime() : 0;
+                                // تحديث الحالة فقط إذا كانت البيانات السحابية أحدث من آخر تعديل محلي
+                                if (!lastCloudTimeRef.current || cloudTime > localTime) {
+                                    lastCloudTimeRef.current = cloudData.lastCloudUpdate;
+                                    if (cloudData.staffData && Array.isArray(cloudData.staffData) && cloudData.staffData.length > 0) {
+                                        applyDataBundleToState(cloudData);
+                                    }
                                 }
                             }
                             setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
@@ -933,9 +938,9 @@
             const pushDataToCloud = async (bundle = null) => {
                 try {
                     setCloudSyncStatus(prev => ({ ...prev, syncing: true }));
-                    const nowIso = new Date().toISOString();
+                    const nowIso = (bundle && bundle.lastCloudUpdate) ? bundle.lastCloudUpdate : new Date().toISOString();
                     lastCloudTimeRef.current = nowIso;
-                    const dataPayload = bundle || {
+                    const dataPayload = bundle ? { ...bundle, lastCloudUpdate: nowIso } : {
                         staffData: staff,
                         officialHolidaysList: officialHolidays,
                         hourlyLeaveRecords: hourlyLeaveRecords,
@@ -950,12 +955,11 @@
                         pendingDeletionRequest: pendingDeletionRequest
                     };
 
-                    // بث سريع مباشر عبر fetch
+                    // بث سريع مباشر عبر fetch بدون keepalive (لتفادي حظر المتصفح للحزم الأكبر من 64KB)
                     const res = await fetch(FIREBASE_DB_URL, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dataPayload),
-                        keepalive: true // يضمن استمرار إرسال البيانات حتى لو أغلق المستخدم المتصفح فوراً
+                        body: JSON.stringify(dataPayload)
                     });
                     if (res.ok) {
                         setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
