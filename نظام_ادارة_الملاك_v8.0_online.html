@@ -1737,6 +1737,64 @@
                 }, 50);
             };
 
+            // تسليط إجراء جماعي لكافة منتسبي موقع / وحدة معينة (تعذر حضور أو استعادة الافتراضي)
+            const setUnitBulkStatus = (unitName, statusValue) => {
+                const targetStaff = staff.filter(s => s.unit === unitName);
+                if (targetStaff.length === 0) return;
+
+                const isDefault = !statusValue || statusValue === 'default';
+                const actionLabel = isDefault ? 'استعادة الموقف الافتراضي' : `تسليط حالة (${statusValue})`;
+
+                if (!confirm(`هل أنت متأكد من ${actionLabel} لجميع منتسبي (${unitName}) البالغ عددهم ${targetStaff.length} موظفاً لتاريخ [${dailyReportDate}]؟`)) {
+                    return;
+                }
+
+                let updatedOverrides = {};
+                setDailyStatusOverrides(prev => {
+                    const next = { ...prev };
+                    const dateOverrides = { ...(next[dailyReportDate] || {}) };
+
+                    targetStaff.forEach(emp => {
+                        if (isDefault) {
+                            delete dateOverrides[emp.id];
+                        } else {
+                            dateOverrides[emp.id] = statusValue;
+                        }
+                    });
+
+                    if (Object.keys(dateOverrides).length === 0) {
+                        delete next[dailyReportDate];
+                    } else {
+                        next[dailyReportDate] = dateOverrides;
+                    }
+                    updatedOverrides = next;
+                    return next;
+                });
+
+                showCustomAlert(`✅ تم بنجاح ${actionLabel} لجميع منتسبي (${unitName}) (${targetStaff.length} موظف)`, 'success');
+
+                setTimeout(() => {
+                    if (isFirebaseConfigured && isFirebaseConfigured()) {
+                        pushToFirebase({
+                            staff: staff,
+                            archivedStaff: archivedStaff,
+                            officialHolidays: officialHolidays,
+                            dailyStatusOverrides: updatedOverrides,
+                            hourlyLeaves: hourlyLeaves,
+                            overtimeHours: overtimeHours,
+                            systemUsersList: systemUsers,
+                            anchorDate: anchorDate,
+                            threeShiftAnchorSquad: threeShiftAnchorSquad,
+                            twoShiftAnchorSquad: twoShiftAnchorSquad,
+                            dataEntryOperator: dataEntryOperator,
+                            overtimeSelectedIds: overtimeIds,
+                            lastCloudUpdate: new Date().toISOString(),
+                            pendingDeletionRequest: pendingDeletionRequest
+                        });
+                    }
+                }, 50);
+            };
+
             const handleThreeShiftAnchorChange = (squad) => {
                 setAnchorDate(dailyReportDate);
                 setThreeShiftAnchorSquad(squad);
@@ -6549,14 +6607,38 @@
                                                 
                                                 return (
                                                     <div key={unitName} className="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden">
-                                                        <div className="bg-slate-50/80 px-5 py-3 border-b border-slate-100 flex justify-between items-center">
-                                                            <h3 className="font-black text-slate-800 text-sm md:text-base flex items-center gap-2">
-                                                                <span>📍</span>
-                                                                <span>{unitName}</span>
-                                                            </h3>
-                                                            <span className="bg-slate-200/70 text-slate-700 font-bold px-2.5 py-0.5 rounded-full text-xs">
-                                                                {unitStaff.length} موظف
-                                                            </span>
+                                                        <div className="bg-slate-50/90 px-4 md:px-5 py-3 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="font-black text-slate-800 text-sm md:text-base flex items-center gap-2">
+                                                                    <span>📍</span>
+                                                                    <span>{unitName}</span>
+                                                                </h3>
+                                                                <span className="bg-slate-200 text-slate-700 font-black px-2.5 py-0.5 rounded-full text-xs">
+                                                                    {unitStaff.length} موظف
+                                                                </span>
+                                                            </div>
+
+                                                            {/* أزرار الإجراء السريع الجماعي لموقع / وحدة الدوام */}
+                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setUnitBulkStatus(unitName, 'تعذر حضور')}
+                                                                    className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-xl text-xs font-black transition flex items-center gap-1 cursor-pointer active:scale-95 shadow-sm"
+                                                                    title={`تسليط تعذر حضور لكافة منتسبي (${unitName}) لهذا اليوم بضغطة واحدة`}
+                                                                >
+                                                                    <span>🚧</span>
+                                                                    <span>تسليط تعذر حضور للموقع</span>
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setUnitBulkStatus(unitName, 'default')}
+                                                                    className="px-2.5 py-1.5 bg-slate-200/80 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer active:scale-95"
+                                                                    title={`استعادة الموقف الطبيعي الافتراضي لكافة منتسبي (${unitName}) لهذا اليوم`}
+                                                                >
+                                                                    <span>🔄</span>
+                                                                    <span>استعادة الافتراضي</span>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                         
                                                         <div className="overflow-x-auto w-full">
@@ -6587,6 +6669,8 @@
                                                                         else if (status.includes('دورة')) statusBadgeColor = 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100';
                                                                         else if (status === 'غياب') statusBadgeColor = 'bg-red-600 text-white border-red-600 hover:bg-red-700';
                                                                         
+                                                                        const selectValue = isOverride ? ((status.includes('تعذر') || status.includes('توقف موقع')) ? 'تعذر حضور' : status) : 'default';
+
                                                                         return (
                                                                             <tr key={emp.id} className="border-b border-slate-100 hover:bg-slate-50/70 transition items-center">
                                                                                 <td className="px-4 py-3.5 text-center text-slate-500 font-extrabold w-14 text-sm md:text-base">{idx + 1}</td>
@@ -6611,7 +6695,7 @@
                                                                                 </td>
                                                                                 <td className="px-4 py-3.5 text-center w-1/3">
                                                                                     <select 
-                                                                                        value={isOverride ? status : 'default'}
+                                                                                        value={selectValue}
                                                                                         onChange={(e) => setEmployeeDailyStatusOverride(emp.id, dailyReportDate, e.target.value)}
                                                                                         className={`w-full text-xs md:text-sm font-black rounded-xl px-3.5 py-2.5 border shadow-sm outline-none cursor-pointer transition-all ${statusBadgeColor}`}
                                                                                     >
@@ -6628,8 +6712,7 @@
                                                                                         <option value="إيفاد داخل العراق" className="bg-white text-purple-700 font-bold">🇮🇶 إيفاد داخل العراق</option>
                                                                                         <option value="إيفاد خارج العراق" className="bg-white text-indigo-900 font-bold">🌐 إيفاد خارج العراق</option>
                                                                                         <option value="ورقة عمل" className="bg-white text-emerald-700 font-bold">📝 ورقة عمل</option>
-                                                                                        <option value="تعذر حضور (قطع طرق / ظرف طارئ)" className="bg-white text-amber-800 font-bold">🚧 تعذر حضور (قطع طرق / ظرف طارئ)</option>
-                                                                                        <option value="توقف موقع (قوة قاهرة)" className="bg-white text-orange-900 font-bold">🛑 توقف موقع (قوة قاهرة)</option>
+                                                                                        <option value="تعذر حضور" className="bg-white text-amber-800 font-bold">🚧 تعذر حضور</option>
                                                                                         <option value="استراحة ذوي الاحتياجات الخاصة" className="bg-white text-teal-800 font-bold">♿ استراحة ذوي الاحتياجات الخاصة</option>
                                                                                         <option value="غياب" className="bg-white text-red-700 font-bold">❌ غياب</option>
                                                                                     </select>
