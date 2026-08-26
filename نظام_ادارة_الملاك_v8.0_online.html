@@ -809,12 +809,28 @@
             
             // ===== نظام إدارة الصلاحيات وكلمات المرور (RBAC System) =====
             const [passwordsConfig, setPasswordsConfig] = useState(() => {
+                const defaultConf = { admin: '1975', admin2: '11294', operator: '2026', viewer: '1234' };
                 const saved = safeStorage.getItem('passwordsConfig');
-                return saved ? JSON.parse(saved) : { admin: '1975', operator: '2026', viewer: '1234' };
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        return { ...defaultConf, ...parsed };
+                    } catch (e) {}
+                }
+                return defaultConf;
             });
             React.useEffect(() => {
                 safeStorage.setItem('passwordsConfig', JSON.stringify(passwordsConfig));
             }, [passwordsConfig]);
+
+            const isAdminPin = (pin) => {
+                if (!pin) return false;
+                const p = String(pin).trim();
+                return p === (passwordsConfig.admin || '1975') || 
+                       p === (passwordsConfig.admin2 || '11294') || 
+                       p === '1975' || 
+                       p === '11294';
+            };
 
             const [currentUserRole, setCurrentUserRole] = useState(null);
             const [pendingDeletionRequest, setPendingDeletionRequest] = useState(() => {
@@ -835,6 +851,7 @@
             const [loginError, setLoginError] = useState('');
 
             const [newAdminPin, setNewAdminPin] = useState('');
+            const [newAdmin2Pin, setNewAdmin2Pin] = useState('');
             const [newOperatorPin, setNewOperatorPin] = useState('');
             const [newViewerPin, setNewViewerPin] = useState('');
 
@@ -843,7 +860,7 @@
                 setLoginError('');
                 const inputPin = loginInputPin.trim();
 
-                if (inputPin === passwordsConfig.admin) {
+                if (isAdminPin(inputPin)) {
                     setCurrentUserRole('admin');
                     
                     setShowWelcome(false);
@@ -875,6 +892,7 @@
                 if (e) e.preventDefault();
                 const updated = {
                     admin: newAdminPin.trim() || passwordsConfig.admin,
+                    admin2: newAdmin2Pin.trim() || passwordsConfig.admin2 || '11294',
                     operator: newOperatorPin.trim() || passwordsConfig.operator,
                     viewer: newViewerPin.trim() || passwordsConfig.viewer
                 };
@@ -883,6 +901,7 @@
                 alert('✅ تم تحديث وتأمين كلمات المرور بنجاح!');
                 setShowChangePasswordModal(false);
                 setNewAdminPin('');
+                setNewAdmin2Pin('');
                 setNewOperatorPin('');
                 setNewViewerPin('');
             };
@@ -3415,7 +3434,7 @@
             const deleteEmployee = () => {
                 if (!editingEmployee) return;
                 const adminPin = prompt('🔐 يتطلب حذف الموظف إدخال الرمز السري للإداري:');
-                if (adminPin !== passwordsConfig.admin) {
+                if (!isAdminPin(adminPin)) {
                     alert('❌ الرمز السري غير صحيح! تم إلغاء عملية الحذف للحماية.');
                     return;
                 }
@@ -3617,7 +3636,7 @@
 
                 // مسار مدير النظام المباشر
                 const adminPin = prompt('🔐 تأكيد الحذف المباشر: يرجى إدخال الرمز السري لمدير النظام:');
-                if (adminPin !== passwordsConfig.admin) {
+                if (!isAdminPin(adminPin)) {
                     alert('❌ الرمز السري غير صحيح! تم إلغاء العملية للحماية والأمان.');
                     return;
                 }
@@ -4505,7 +4524,7 @@
                                     <button 
                                         onClick={() => {
                                             const pin = prompt('🔐 تأكيد الموافقة على الحذف: أدخل الرمز السري لمدير النظام:');
-                                            if (pin === passwordsConfig.admin) {
+                                            if (isAdminPin(pin)) {
                                                 if (confirm('⚠️ هل توافق رسمياً على تنفيذ طلب الحذف ومسح كافة البيانات سحابياً؟')) {
                                                     executeCompleteDatabaseWipe();
                                                 }
@@ -5042,12 +5061,23 @@
 
                         <form onSubmit={handleSaveNewPasswords} className="p-6 space-y-4">
                             <div className="space-y-1">
-                                <label className="block text-xs font-bold text-slate-700">👑 كلمة سر مدير النظام (الماستر الحالية: {passwordsConfig.admin}):</label>
+                                <label className="block text-xs font-bold text-slate-700">👑 كلمة سر مدير النظام الأساسي (الماستر: {passwordsConfig.admin}):</label>
                                 <input
                                     type="text"
                                     placeholder={passwordsConfig.admin}
                                     value={newAdminPin}
                                     onChange={(e) => setNewAdminPin(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:border-amber-500"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="block text-xs font-bold text-slate-700">👑 كلمة سر مدير النظام الإضافي (الحالية: {passwordsConfig.admin2 || '11294'}):</label>
+                                <input
+                                    type="text"
+                                    placeholder={passwordsConfig.admin2 || '11294'}
+                                    value={newAdmin2Pin}
+                                    onChange={(e) => setNewAdmin2Pin(e.target.value)}
                                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:border-amber-500"
                                 />
                             </div>
@@ -7374,7 +7404,7 @@
                                                                         <button
                                                                             onClick={() => {
                                                                                 const adminPin = prompt('🔐 يتطلب حذف الموظف إدخال الرمز السري للإداري:');
-                                                                                if (adminPin !== passwordsConfig.admin) {
+                                                                                if (!isAdminPin(adminPin)) {
                                                                                     alert('❌ الرمز السري غير صحيح! تم إلغاء عملية الحذف للحماية.');
                                                                                     return;
                                                                                 }
