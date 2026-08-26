@@ -593,7 +593,16 @@
 
             const [officialHolidays, setOfficialHolidays] = useState(() => {
                 const saved = safeStorage.getItem('officialHolidaysList');
-                return saved ? JSON.parse(saved) : [];
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed)) {
+                            if (!parsed.includes('2026-08-25')) parsed.push('2026-08-25');
+                            return parsed;
+                        }
+                    } catch(e) {}
+                }
+                return ['2026-08-03', '2026-08-04', '2026-08-25'];
             });
             React.useEffect(() => {
                 safeStorage.setItem('officialHolidaysList', JSON.stringify(officialHolidays));
@@ -1269,8 +1278,12 @@
                     safeStorage.setItem('systemUsersList', JSON.stringify(bundle.systemUsersList));
                 }
                 if (bundle.officialHolidaysList && Array.isArray(bundle.officialHolidaysList)) {
-                    setOfficialHolidays(bundle.officialHolidaysList);
-                    safeStorage.setItem('officialHolidaysList', JSON.stringify(bundle.officialHolidaysList));
+                    let holidays = [...bundle.officialHolidaysList];
+                    if (!holidays.includes('2026-08-25')) {
+                        holidays.push('2026-08-25');
+                    }
+                    setOfficialHolidays(holidays);
+                    safeStorage.setItem('officialHolidaysList', JSON.stringify(holidays));
                 }
                 if (bundle.hourlyLeaveRecords) {
                     setHourlyLeaveRecords(bundle.hourlyLeaveRecords);
@@ -1774,24 +1787,21 @@
                 showCustomAlert(`✅ تم بنجاح ${actionLabel} لجميع منتسبي (${unitName}) (${targetStaff.length} موظف)`, 'success');
 
                 setTimeout(() => {
-                    if (isFirebaseConfigured && isFirebaseConfigured()) {
-                        pushToFirebase({
-                            staff: staff,
-                            archivedStaff: archivedStaff,
-                            officialHolidays: officialHolidays,
-                            dailyStatusOverrides: updatedOverrides,
-                            hourlyLeaves: hourlyLeaves,
-                            overtimeHours: overtimeHours,
-                            systemUsersList: systemUsers,
-                            anchorDate: anchorDate,
-                            threeShiftAnchorSquad: threeShiftAnchorSquad,
-                            twoShiftAnchorSquad: twoShiftAnchorSquad,
-                            dataEntryOperator: dataEntryOperator,
-                            overtimeSelectedIds: overtimeIds,
-                            lastCloudUpdate: new Date().toISOString(),
-                            pendingDeletionRequest: pendingDeletionRequest
-                        });
-                    }
+                    pushDataToCloud({
+                        staffData: staff,
+                        systemUsersList: systemUsers,
+                        officialHolidaysList: officialHolidays,
+                        hourlyLeaveRecords: hourlyLeaveRecords,
+                        overtimeHoursRecords: overtimeHoursRecords,
+                        dailyStatusOverrides: updatedOverrides,
+                        shiftAnchorDate: anchorDate,
+                        threeShiftAnchorSquad: threeShiftAnchorSquad,
+                        twoShiftAnchorSquad: twoShiftAnchorSquad,
+                        dataEntryOperator: dataEntryOperator,
+                        overtimeSelectedIds: overtimeIds,
+                        lastCloudUpdate: new Date().toISOString(),
+                        pendingDeletionRequest: pendingDeletionRequest
+                    });
                 }, 50);
             };
 
