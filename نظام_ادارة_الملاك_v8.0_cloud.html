@@ -1551,7 +1551,7 @@
                     } else if (status === 'دوام إضافي' || status.includes('إضافي')) {
                         onDuty++;
                         overtimeDuty++;
-                    } else if (status.includes('استراحة')) {
+                    } else if (status.includes('استراحة') || status.includes('عطلة') || status === 'عطلة رسمية') {
                         rest++;
                     } else if (status.includes('إجازة') || status.includes('غياب') || status.includes('دورة') || status.includes('إيفاد') || status.includes('مرضية') || status.includes('زمنية')) {
                         off++;
@@ -1741,16 +1741,39 @@
                     const exportData = [];
                     let counter = 1;
                     
+                    const isOfficialHoliday = officialHolidays.includes(dailyReportDate);
+                    let isWeekend = false;
+                    try {
+                        const p = dailyReportDate.split('-');
+                        const d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+                        isWeekend = d.getDay() === 5 || d.getDay() === 6;
+                    } catch(e) {}
+                    const isOffDay = isOfficialHoliday || isWeekend;
+
                     unitOrder.forEach(unitName => {
                         const unitStaff = staff.filter(s => s.unit === unitName);
                         const unitDailyStaff = unitStaff.filter(s => {
                             if (isLongOrMaternityLeave(s.status)) return false;
                             const status = getEmployeeDailyStatus(s, dailyReportDate);
                             if (isLongOrMaternityLeave(status)) return false;
+                            
+                            // المناوبون يظهرون دائماً (سواء بالدوام أو استراحة المناوبة)
                             if (s.workType === 'مناوب') {
-                                return true; // إظهار كل المناوبين سواء كانوا بالدوام أو الاستراحة
+                                return true;
                             }
-                            return status !== 'دوام صباحي' && status !== 'حضور فعلي' && status !== 'استراحة نهاية الأسبوع' && !status.includes('نهاية الأسبوع');
+                            
+                            // موظفو الصباحي:
+                            if (isOffDay) {
+                                // في العطل الرسمية وأيام نهاية الأسبوع (الجمعة والسبت):
+                                // إخفاء موظفي الصباحي تماماً إلا إذا تم تثبيت حضور/دوام فعلي أو تكليف استثنائي
+                                if (status === 'عطلة رسمية' || status.includes('عطلة') || status === 'استراحة نهاية الأسبوع' || status.includes('نهاية الأسبوع') || status === 'استراحة') {
+                                    return false;
+                                }
+                                return true; // يظهر فقط من تم تثبيت دوام أو إضافي أو ورقة عمل له
+                            } else {
+                                // في الأيام الاعتيادية: إخفاء الحضور الطبيعي وإظهار الإجازات والاستثناءات فقط
+                                return status !== 'دوام صباحي' && status !== 'حضور فعلي';
+                            }
                         });
 
                         if (unitDailyStaff.length > 0) {
