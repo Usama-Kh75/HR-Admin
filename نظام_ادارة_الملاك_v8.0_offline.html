@@ -809,7 +809,7 @@
             
             // ===== نظام إدارة الصلاحيات وكلمات المرور (RBAC System) =====
             const [passwordsConfig, setPasswordsConfig] = useState(() => {
-                const defaultConf = { admin: '1975', admin2: '11294', operator: '2026', viewer: '1234' };
+                const defaultConf = { admin: '1975', operator: '2026', operator2: '11294', viewer: '1234' };
                 const saved = safeStorage.getItem('passwordsConfig');
                 if (saved) {
                     try {
@@ -826,10 +826,16 @@
             const isAdminPin = (pin) => {
                 if (!pin) return false;
                 const p = String(pin).trim();
-                return p === (passwordsConfig.admin || '1975') || 
-                       p === (passwordsConfig.admin2 || '11294') || 
-                       p === '1975' || 
-                       p === '11294';
+                return p === (passwordsConfig.admin || '1975') || p === '1975';
+            };
+
+            const isOperatorPin = (pin) => {
+                if (!pin) return false;
+                const p = String(pin).trim();
+                return p === (passwordsConfig.operator || '2026') || 
+                       p === (passwordsConfig.operator2 || '11294') || 
+                       p === '11294' || 
+                       p === '2026';
             };
 
             const [currentUserRole, setCurrentUserRole] = useState(null);
@@ -851,8 +857,8 @@
             const [loginError, setLoginError] = useState('');
 
             const [newAdminPin, setNewAdminPin] = useState('');
-            const [newAdmin2Pin, setNewAdmin2Pin] = useState('');
             const [newOperatorPin, setNewOperatorPin] = useState('');
+            const [newOperator2Pin, setNewOperator2Pin] = useState('');
             const [newViewerPin, setNewViewerPin] = useState('');
 
             const handleLogin = (e) => {
@@ -866,7 +872,7 @@
                     setShowWelcome(false);
                     setLoginInputPin('');
                     setShowLoginModal(false);
-                } else if (inputPin === passwordsConfig.operator) {
+                } else if (isOperatorPin(inputPin)) {
                     setCurrentUserRole('operator');
                     
                     setShowWelcome(false);
@@ -892,8 +898,8 @@
                 if (e) e.preventDefault();
                 const updated = {
                     admin: newAdminPin.trim() || passwordsConfig.admin,
-                    admin2: newAdmin2Pin.trim() || passwordsConfig.admin2 || '11294',
                     operator: newOperatorPin.trim() || passwordsConfig.operator,
+                    operator2: newOperator2Pin.trim() || passwordsConfig.operator2 || '11294',
                     viewer: newViewerPin.trim() || passwordsConfig.viewer
                 };
                 setPasswordsConfig(updated);
@@ -901,8 +907,8 @@
                 alert('✅ تم تحديث وتأمين كلمات المرور بنجاح!');
                 setShowChangePasswordModal(false);
                 setNewAdminPin('');
-                setNewAdmin2Pin('');
                 setNewOperatorPin('');
+                setNewOperator2Pin('');
                 setNewViewerPin('');
             };
 
@@ -5061,7 +5067,7 @@
 
                         <form onSubmit={handleSaveNewPasswords} className="p-6 space-y-4">
                             <div className="space-y-1">
-                                <label className="block text-xs font-bold text-slate-700">👑 كلمة سر مدير النظام الأساسي (الماستر: {passwordsConfig.admin}):</label>
+                                <label className="block text-xs font-bold text-slate-700">👑 كلمة سر مدير النظام (الماستر الحالية: {passwordsConfig.admin}):</label>
                                 <input
                                     type="text"
                                     placeholder={passwordsConfig.admin}
@@ -5072,23 +5078,23 @@
                             </div>
 
                             <div className="space-y-1">
-                                <label className="block text-xs font-bold text-slate-700">👑 كلمة سر مدير النظام الإضافي (الحالية: {passwordsConfig.admin2 || '11294'}):</label>
-                                <input
-                                    type="text"
-                                    placeholder={passwordsConfig.admin2 || '11294'}
-                                    value={newAdmin2Pin}
-                                    onChange={(e) => setNewAdmin2Pin(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:border-amber-500"
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="block text-xs font-bold text-slate-700">✍️ كلمة سر الإداريين ومُدخلي البيانات (الحالية: {passwordsConfig.operator}):</label>
+                                <label className="block text-xs font-bold text-slate-700">✍️ كلمة سر الإداري ومُدخل البيانات 1 (الحالية: {passwordsConfig.operator}):</label>
                                 <input
                                     type="text"
                                     placeholder={passwordsConfig.operator}
                                     value={newOperatorPin}
                                     onChange={(e) => setNewOperatorPin(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:border-amber-500"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="block text-xs font-bold text-slate-700">✍️ كلمة سر الإداري ومُدخل البيانات 2 (الحالية: {passwordsConfig.operator2 || '11294'}):</label>
+                                <input
+                                    type="text"
+                                    placeholder={passwordsConfig.operator2 || '11294'}
+                                    value={newOperator2Pin}
+                                    onChange={(e) => setNewOperator2Pin(e.target.value)}
                                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:border-amber-500"
                                 />
                             </div>
