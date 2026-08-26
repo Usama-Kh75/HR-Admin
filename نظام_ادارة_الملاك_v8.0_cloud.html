@@ -623,11 +623,24 @@
 
             const toggleOfficialHolidayDate = (dateStr) => {
                 setOfficialHolidays(prev => {
-                    if (prev.includes(dateStr)) {
-                        return prev.filter(d => d !== dateStr);
-                    } else {
-                        return [...prev, dateStr];
-                    }
+                    const next = prev.includes(dateStr) ? prev.filter(d => d !== dateStr) : [...prev, dateStr];
+                    safeStorage.setItem('officialHolidaysList', JSON.stringify(next));
+                    pushDataToCloud({
+                        staffData: staff,
+                        systemUsersList: systemUsers,
+                        officialHolidaysList: next,
+                        hourlyLeaveRecords: hourlyLeaveRecords,
+                        overtimeHoursRecords: overtimeHoursRecords,
+                        dailyStatusOverrides: dailyStatusOverrides,
+                        shiftAnchorDate: anchorDate,
+                        threeShiftAnchorSquad: threeShiftAnchorSquad,
+                        twoShiftAnchorSquad: twoShiftAnchorSquad,
+                        dataEntryOperator: dataEntryOperator,
+                        overtimeSelectedIds: overtimeIds,
+                        lastCloudUpdate: new Date().toISOString(),
+                        pendingDeletionRequest: pendingDeletionRequest
+                    });
+                    return next;
                 });
             };
 
@@ -654,7 +667,26 @@
                     cur.setDate(cur.getDate() + 1);
                 }
 
-                setOfficialHolidays(prev => Array.from(new Set([...prev, ...newDates])));
+                setOfficialHolidays(prev => {
+                    const next = Array.from(new Set([...prev, ...newDates]));
+                    safeStorage.setItem('officialHolidaysList', JSON.stringify(next));
+                    pushDataToCloud({
+                        staffData: staff,
+                        systemUsersList: systemUsers,
+                        officialHolidaysList: next,
+                        hourlyLeaveRecords: hourlyLeaveRecords,
+                        overtimeHoursRecords: overtimeHoursRecords,
+                        dailyStatusOverrides: dailyStatusOverrides,
+                        shiftAnchorDate: anchorDate,
+                        threeShiftAnchorSquad: threeShiftAnchorSquad,
+                        twoShiftAnchorSquad: twoShiftAnchorSquad,
+                        dataEntryOperator: dataEntryOperator,
+                        overtimeSelectedIds: overtimeIds,
+                        lastCloudUpdate: new Date().toISOString(),
+                        pendingDeletionRequest: pendingDeletionRequest
+                    });
+                    return next;
+                });
                 alert(`✅ تم إضافة ${newDates.length} أيام كـ عطل رسمية بنجاح!`);
                 setHolidayRangeStart('');
                 setHolidayRangeEnd('');
