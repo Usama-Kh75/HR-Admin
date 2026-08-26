@@ -807,7 +807,45 @@
             // محرك المزامنة حياً مع السيرفر المحلي للشعبة (Local Live Sync Engine)
             // ----------------------------------------------------
             
-            // ===== نظام إدارة الصلاحيات وكلمات المرور (RBAC System) =====
+            // ===== نظام إدارة المستخدمين والصلاحيات الديناميكي (Dynamic Users & RBAC System) =====
+            const defaultSystemUsers = [
+                { id: 'usr_1', name: 'أسامة خليل (مدير النظام)', role: 'admin', pin: '1975', active: true, createdAt: '2026-01-01' },
+                { id: 'usr_2', name: 'إداري الشعبة 1', role: 'operator', pin: '2026', active: true, createdAt: '2026-01-01' },
+                { id: 'usr_3', name: 'إداري الشعبة 2', role: 'operator', pin: '11294', active: true, createdAt: '2026-01-01' },
+                { id: 'usr_4', name: 'مستعرض عام', role: 'viewer', pin: '1234', active: true, createdAt: '2026-01-01' }
+            ];
+
+            const [systemUsers, setSystemUsers] = useState(() => {
+                const saved = safeStorage.getItem('systemUsersList');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                    } catch (e) {}
+                }
+                return defaultSystemUsers;
+            });
+
+            React.useEffect(() => {
+                safeStorage.setItem('systemUsersList', JSON.stringify(systemUsers));
+            }, [systemUsers]);
+
+            const [currentUserName, setCurrentUserName] = useState(() => safeStorage.getItem('currentUserName') || '');
+            React.useEffect(() => {
+                if (currentUserName) {
+                    safeStorage.setItem('currentUserName', currentUserName);
+                } else {
+                    safeStorage.removeItem('currentUserName');
+                }
+            }, [currentUserName]);
+
+            const [showUserManagementModal, setShowUserManagementModal] = useState(false);
+            const [editingUserId, setEditingUserId] = useState(null);
+            const [userFormName, setUserFormName] = useState('');
+            const [userFormRole, setUserFormRole] = useState('operator');
+            const [userFormPin, setUserFormPin] = useState('');
+            const [showUserPins, setShowUserPins] = useState(false);
+
             const [passwordsConfig, setPasswordsConfig] = useState(() => {
                 const defaultConf = { admin: '1975', operator: '2026', operator2: '11294', viewer: '1234' };
                 const saved = safeStorage.getItem('passwordsConfig');
@@ -826,16 +864,15 @@
             const isAdminPin = (pin) => {
                 if (!pin) return false;
                 const p = String(pin).trim();
-                return p === (passwordsConfig.admin || '1975') || p === '1975';
+                const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && u.role === 'admin');
+                return !!matchedUser || p === (passwordsConfig.admin || '1975') || p === '1975';
             };
 
             const isOperatorPin = (pin) => {
                 if (!pin) return false;
                 const p = String(pin).trim();
-                return p === (passwordsConfig.operator || '2026') || 
-                       p === (passwordsConfig.operator2 || '11294') || 
-                       p === '11294' || 
-                       p === '2026';
+                const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && u.role === 'operator');
+                return !!matchedUser || p === (passwordsConfig.operator || '2026') || p === (passwordsConfig.operator2 || '11294') || p === '11294' || p === '2026';
             };
 
             const [currentUserRole, setCurrentUserRole] = useState(null);
@@ -851,36 +888,45 @@
                 }
             }, [pendingDeletionRequest]);
 
-            const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
             const [loginInputRole, setLoginInputRole] = useState('operator');
             const [loginInputPin, setLoginInputPin] = useState('');
             const [loginError, setLoginError] = useState('');
-
-            const [newAdminPin, setNewAdminPin] = useState('');
-            const [newOperatorPin, setNewOperatorPin] = useState('');
-            const [newOperator2Pin, setNewOperator2Pin] = useState('');
-            const [newViewerPin, setNewViewerPin] = useState('');
 
             const handleLogin = (e) => {
                 if (e) e.preventDefault();
                 setLoginError('');
                 const inputPin = loginInputPin.trim();
 
-                if (isAdminPin(inputPin)) {
+                // 1. فحص المستخدمين المعرفين في النظام
+                const matched = systemUsers.find(u => u.active !== false && String(u.pin).trim() === inputPin);
+                if (matched) {
+                    setCurrentUserRole(matched.role);
+                    setCurrentUserName(matched.name);
+                    if (matched.role === 'operator' || matched.role === 'admin') {
+                        setDataEntryOperator(matched.name.split('(')[0].trim());
+                    }
+                    setShowWelcome(false);
+                    setLoginInputPin('');
+                    setShowLoginModal(false);
+                    return;
+                }
+
+                // 2. فحص كلمات المرور الاحتياطية
+                if (inputPin === (passwordsConfig.admin || '1975') || inputPin === '1975') {
                     setCurrentUserRole('admin');
-                    
+                    setCurrentUserName('مدير النظام');
                     setShowWelcome(false);
                     setLoginInputPin('');
                     setShowLoginModal(false);
-                } else if (isOperatorPin(inputPin)) {
+                } else if (inputPin === (passwordsConfig.operator || '2026') || inputPin === (passwordsConfig.operator2 || '11294') || inputPin === '11294' || inputPin === '2026') {
                     setCurrentUserRole('operator');
-                    
+                    setCurrentUserName('إداري مُدخل');
                     setShowWelcome(false);
                     setLoginInputPin('');
                     setShowLoginModal(false);
-                } else if (inputPin === passwordsConfig.viewer || inputPin === '') {
+                } else if (inputPin === (passwordsConfig.viewer || '1234') || inputPin === '1234' || inputPin === '') {
                     setCurrentUserRole('viewer');
-                    
+                    setCurrentUserName('مستعرض');
                     setShowWelcome(false);
                     setLoginInputPin('');
                     setShowLoginModal(false);
@@ -891,25 +937,139 @@
 
             const handleLogout = () => {
                 setCurrentUserRole(null);
-                
+                setCurrentUserName('');
             };
 
-            const handleSaveNewPasswords = (e) => {
+            const handleSaveUser = (e) => {
                 if (e) e.preventDefault();
-                const updated = {
-                    admin: newAdminPin.trim() || passwordsConfig.admin,
-                    operator: newOperatorPin.trim() || passwordsConfig.operator,
-                    operator2: newOperator2Pin.trim() || passwordsConfig.operator2 || '11294',
-                    viewer: newViewerPin.trim() || passwordsConfig.viewer
-                };
-                setPasswordsConfig(updated);
-                safeStorage.setItem('passwordsConfig', JSON.stringify(updated));
-                alert('✅ تم تحديث وتأمين كلمات المرور بنجاح!');
-                setShowChangePasswordModal(false);
-                setNewAdminPin('');
-                setNewOperatorPin('');
-                setNewOperator2Pin('');
-                setNewViewerPin('');
+                const name = userFormName.trim();
+                const pin = userFormPin.trim();
+                if (!name) {
+                    alert('⚠️ يرجى إدخال اسم المستخدم!');
+                    return;
+                }
+                if (!pin) {
+                    alert('⚠️ يرجى إدخال كلمة المرور / رمز الدخول!');
+                    return;
+                }
+
+                const existingWithPin = systemUsers.find(u => String(u.pin).trim() === pin && u.id !== editingUserId);
+                if (existingWithPin) {
+                    alert(`⚠️ كلمة المرور (${pin}) مستخدمة بالفعل للمستخدم (${existingWithPin.name})!\nيرجى اختيار كلمة مرور فريدة.`);
+                    return;
+                }
+
+                let updatedUsers;
+                if (editingUserId) {
+                    updatedUsers = systemUsers.map(u => u.id === editingUserId ? { ...u, name, role: userFormRole, pin } : u);
+                    alert(`✅ تم تحديث بيانات المستخدم (${name}) بنجاح!`);
+                } else {
+                    const newUser = {
+                        id: 'usr_' + Date.now(),
+                        name,
+                        role: userFormRole,
+                        pin,
+                        active: true,
+                        createdAt: new Date().toLocaleDateString('ar-IQ')
+                    };
+                    updatedUsers = [...systemUsers, newUser];
+                    alert(`✅ تم إضافة المستخدم الجديد (${name}) بصلاحية (${userFormRole === 'admin' ? 'مدير نظام' : userFormRole === 'operator' ? 'إداري مُدخل' : 'مستعرض'}) بنجاح!`);
+                }
+
+                setSystemUsers(updatedUsers);
+                safeStorage.setItem('systemUsersList', JSON.stringify(updatedUsers));
+                pushDataToCloud({
+                    staffData: staff,
+                    systemUsersList: updatedUsers,
+                    officialHolidaysList: officialHolidays,
+                    hourlyLeaveRecords: hourlyLeaveRecords,
+                    overtimeHoursRecords: overtimeHoursRecords,
+                    dailyStatusOverrides: dailyStatusOverrides,
+                    shiftAnchorDate: anchorDate,
+                    threeShiftAnchorSquad: threeShiftAnchorSquad,
+                    twoShiftAnchorSquad: twoShiftAnchorSquad,
+                    dataEntryOperator: dataEntryOperator,
+                    overtimeSelectedIds: overtimeIds,
+                    lastCloudUpdate: new Date().toISOString(),
+                    pendingDeletionRequest: pendingDeletionRequest
+                });
+
+                setEditingUserId(null);
+                setUserFormName('');
+                setUserFormRole('operator');
+                setUserFormPin('');
+            };
+
+            const handleEditUserClick = (u) => {
+                setEditingUserId(u.id);
+                setUserFormName(u.name);
+                setUserFormRole(u.role);
+                setUserFormPin(u.pin);
+            };
+
+            const handleCancelUserEdit = () => {
+                setEditingUserId(null);
+                setUserFormName('');
+                setUserFormRole('operator');
+                setUserFormPin('');
+            };
+
+            const handleDeleteUser = (userId) => {
+                const userToDelete = systemUsers.find(u => u.id === userId);
+                if (!userToDelete) return;
+                if (systemUsers.filter(u => u.role === 'admin' && u.active !== false).length <= 1 && userToDelete.role === 'admin') {
+                    alert('⛔ لا يمكن حذف مدير النظام الوحيد في النظام!');
+                    return;
+                }
+                if (!confirm(`⚠️ هل أنت متأكد من حذف المستخدم (${userToDelete.name}) نهائياً؟`)) return;
+
+                const updatedUsers = systemUsers.filter(u => u.id !== userId);
+                setSystemUsers(updatedUsers);
+                safeStorage.setItem('systemUsersList', JSON.stringify(updatedUsers));
+                pushDataToCloud({
+                    staffData: staff,
+                    systemUsersList: updatedUsers,
+                    officialHolidaysList: officialHolidays,
+                    hourlyLeaveRecords: hourlyLeaveRecords,
+                    overtimeHoursRecords: overtimeHoursRecords,
+                    dailyStatusOverrides: dailyStatusOverrides,
+                    shiftAnchorDate: anchorDate,
+                    threeShiftAnchorSquad: threeShiftAnchorSquad,
+                    twoShiftAnchorSquad: twoShiftAnchorSquad,
+                    dataEntryOperator: dataEntryOperator,
+                    overtimeSelectedIds: overtimeIds,
+                    lastCloudUpdate: new Date().toISOString(),
+                    pendingDeletionRequest: pendingDeletionRequest
+                });
+                if (editingUserId === userId) handleCancelUserEdit();
+                alert(`✅ تم حذف المستخدم (${userToDelete.name}) بنجاح.`);
+            };
+
+            const handleToggleUserActive = (userId) => {
+                const userToToggle = systemUsers.find(u => u.id === userId);
+                if (!userToToggle) return;
+                if (userToToggle.role === 'admin' && userToToggle.active !== false && systemUsers.filter(u => u.role === 'admin' && u.active !== false).length <= 1) {
+                    alert('⛔ لا يمكن تعطيل حساب مدير النظام الفعال الوحيد!');
+                    return;
+                }
+                const updatedUsers = systemUsers.map(u => u.id === userId ? { ...u, active: !(u.active !== false) } : u);
+                setSystemUsers(updatedUsers);
+                safeStorage.setItem('systemUsersList', JSON.stringify(updatedUsers));
+                pushDataToCloud({
+                    staffData: staff,
+                    systemUsersList: updatedUsers,
+                    officialHolidaysList: officialHolidays,
+                    hourlyLeaveRecords: hourlyLeaveRecords,
+                    overtimeHoursRecords: overtimeHoursRecords,
+                    dailyStatusOverrides: dailyStatusOverrides,
+                    shiftAnchorDate: anchorDate,
+                    threeShiftAnchorSquad: threeShiftAnchorSquad,
+                    twoShiftAnchorSquad: twoShiftAnchorSquad,
+                    dataEntryOperator: dataEntryOperator,
+                    overtimeSelectedIds: overtimeIds,
+                    lastCloudUpdate: new Date().toISOString(),
+                    pendingDeletionRequest: pendingDeletionRequest
+                });
             };
 
             const isViewer = currentUserRole === 'viewer';
@@ -967,6 +1127,7 @@
                     lastCloudTimeRef.current = nowIso;
                     const dataPayload = bundle ? { ...bundle, lastCloudUpdate: nowIso } : {
                         staffData: staff,
+                        systemUsersList: systemUsers,
                         officialHolidaysList: officialHolidays,
                         hourlyLeaveRecords: hourlyLeaveRecords,
                         overtimeHoursRecords: overtimeHoursRecords,
@@ -1017,6 +1178,7 @@
             const pushDataToServer = async (customBundle = null) => {
                 const bundle = customBundle || {
                     staffData: staff,
+                    systemUsersList: systemUsers,
                     officialHolidaysList: officialHolidays,
                     hourlyLeaveRecords: hourlyLeaveRecords,
                     overtimeHoursRecords: overtimeHoursRecords,
@@ -1069,6 +1231,10 @@
                 if (bundle.staffData && Array.isArray(bundle.staffData)) {
                     setStaff(bundle.staffData);
                     safeStorage.setItem('staffData', JSON.stringify(bundle.staffData));
+                }
+                if (bundle.systemUsersList && Array.isArray(bundle.systemUsersList) && bundle.systemUsersList.length > 0) {
+                    setSystemUsers(bundle.systemUsersList);
+                    safeStorage.setItem('systemUsersList', JSON.stringify(bundle.systemUsersList));
                 }
                 if (bundle.officialHolidaysList && Array.isArray(bundle.officialHolidaysList)) {
                     setOfficialHolidays(bundle.officialHolidaysList);
@@ -4601,25 +4767,26 @@
                                 </span>
                             </div>
 
-                            {/* شريط التحكم بالصفة وكلمات المرور */}
+                            {/* شريط التحكم بالصفة وإدارة المستخدمين */}
                             {currentUserRole && (
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <div className="flex items-center gap-1.5 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full border border-white/20 text-xs font-extrabold text-white shadow-sm">
-                                        <span>{currentUserRole === 'admin' ? '👑 مدير النظام' : (currentUserRole === 'operator' ? '✍️ إداري مُدخل' : '👁️ مستعرض')}</span>
+                                        <span>{currentUserRole === 'admin' ? `👑 ${currentUserName || 'مدير النظام'}` : (currentUserRole === 'operator' ? `✍️ ${currentUserName || 'إداري مُدخل'}` : `👁️ ${currentUserName || 'مستعرض'}`)}</span>
                                     </div>
                                     {currentUserRole === 'admin' && (
                                         <button
-                                            onClick={() => setShowChangePasswordModal(true)}
-                                            className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-full text-xs font-bold shadow transition flex items-center gap-1"
-                                            title="تغيير كلمات المرور للنظام"
+                                            onClick={() => setShowUserManagementModal(true)}
+                                            className="px-3.5 py-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-full text-xs font-black shadow transition flex items-center gap-1 cursor-pointer active:scale-95"
+                                            title="إدارة المستخدمين والصلاحيات وكلمات المرور"
                                         >
-                                            🔑 كلمات المرور
+                                            <span>👥</span>
+                                            <span>إدارة المستخدمين والصلاحيات</span>
                                         </button>
                                     )}
                                     <button
                                         onClick={handleLogout}
-                                        className="px-3 py-1 bg-red-500/80 hover:bg-red-600 text-white rounded-full text-xs font-bold shadow transition flex items-center gap-1"
-                                        title="تسجيل الخروج أو تبديل الصفة"
+                                        className="px-3 py-1 bg-red-500/80 hover:bg-red-600 text-white rounded-full text-xs font-bold shadow transition flex items-center gap-1 cursor-pointer"
+                                        title="تسجيل الخروج أو تبديل المستخدم"
                                     >
                                         🚪 خروج
                                     </button>
@@ -5049,87 +5216,223 @@
                 </div>
             )}
 
-            {/* نافذة تغيير كلمات المرور (Change Passwords Modal) */}
-            {showChangePasswordModal && (
-                <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-fadeInUp">
-                        <div className="bg-gradient-to-r from-amber-600 to-orange-700 p-5 text-white relative flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <span className="text-2xl">🔑</span>
+            {/* نافذة إدارة المستخدمين والصلاحيات الشاملة (User & Role Management Modal) */}
+            {showUserManagementModal && (
+                <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+                    <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-3xl w-full overflow-hidden animate-fadeInUp my-auto">
+                        {/* ترويسة النافذة */}
+                        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 text-white flex justify-between items-center border-b border-indigo-900/50">
+                            <div className="flex items-center gap-3">
+                                <span className="p-2.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-2xl text-2xl">👥</span>
                                 <div>
-                                    <h3 className="text-lg font-black">إدارة كلمات المرور بالنظام</h3>
-                                    <p className="text-xs text-amber-100">خاص بمدير النظام (م. أسامة خليل)</p>
+                                    <h3 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
+                                        <span>إدارة المستخدمين وصلاحيات النظام</span>
+                                        <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">خاص بالمدير 👑</span>
+                                    </h3>
+                                    <p className="text-xs text-slate-300 mt-0.5">إضافة وتعديل المستخدمين وتعيين الصلاحيات وكلمات المرور مع المزامنة السحابية الحية</p>
                                 </div>
                             </div>
                             <button
-                                onClick={() => setShowChangePasswordModal(false)}
-                                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white font-bold transition"
+                                onClick={() => {
+                                    handleCancelUserEdit();
+                                    setShowUserManagementModal(false);
+                                }}
+                                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white font-bold transition cursor-pointer"
                             >
                                 ✕
                             </button>
                         </div>
 
-                        <form onSubmit={handleSaveNewPasswords} className="p-6 space-y-4">
-                            <div className="space-y-1">
-                                <label className="block text-xs font-bold text-slate-700">👑 كلمة سر مدير النظام (الماستر الحالية: {passwordsConfig.admin}):</label>
-                                <input
-                                    type="text"
-                                    placeholder={passwordsConfig.admin}
-                                    value={newAdminPin}
-                                    onChange={(e) => setNewAdminPin(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:border-amber-500"
-                                />
-                            </div>
+                        <div className="p-5 md:p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                            {/* نموذج إضافة / تعديل مستخدم */}
+                            <form onSubmit={handleSaveUser} className={`p-4 md:p-5 rounded-2xl border transition-all ${editingUserId ? 'bg-amber-50/80 border-amber-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}>
+                                <div className="flex items-center justify-between mb-3 border-b border-slate-200/80 pb-2">
+                                    <span className="text-xs md:text-sm font-black text-slate-800 flex items-center gap-1.5">
+                                        <span>{editingUserId ? '✏️ تعديل بيانات المستخدم الحالي:' : '➕ إضافة مستخدم جديد للنظام:'}</span>
+                                    </span>
+                                    {editingUserId && (
+                                        <button
+                                            type="button"
+                                            onClick={handleCancelUserEdit}
+                                            className="text-xs font-bold text-slate-500 hover:text-red-600 underline cursor-pointer"
+                                        >
+                                            إلغاء وضع التعديل
+                                        </button>
+                                    )}
+                                </div>
 
-                            <div className="space-y-1">
-                                <label className="block text-xs font-bold text-slate-700">✍️ كلمة سر الإداري ومُدخل البيانات 1 (الحالية: {passwordsConfig.operator}):</label>
-                                <input
-                                    type="text"
-                                    placeholder={passwordsConfig.operator}
-                                    value={newOperatorPin}
-                                    onChange={(e) => setNewOperatorPin(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:border-amber-500"
-                                />
-                            </div>
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                                    <div className="md:col-span-5 space-y-1">
+                                        <label className="block text-[11px] font-black text-slate-700">👤 اسم المستخدم / اللقب:</label>
+                                        <input
+                                            type="text"
+                                            value={userFormName}
+                                            onChange={(e) => setUserFormName(e.target.value)}
+                                            placeholder="مثال: أحمد علي (إداري المركز)"
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition shadow-sm"
+                                        />
+                                    </div>
 
-                            <div className="space-y-1">
-                                <label className="block text-xs font-bold text-slate-700">✍️ كلمة سر الإداري ومُدخل البيانات 2 (الحالية: {passwordsConfig.operator2 || '11294'}):</label>
-                                <input
-                                    type="text"
-                                    placeholder={passwordsConfig.operator2 || '11294'}
-                                    value={newOperator2Pin}
-                                    onChange={(e) => setNewOperator2Pin(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:border-amber-500"
-                                />
-                            </div>
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="block text-[11px] font-black text-slate-700">🛡️ نوع الصلاحية الممنوحة:</label>
+                                        <select
+                                            value={userFormRole}
+                                            onChange={(e) => setUserFormRole(e.target.value)}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-black text-slate-800 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition shadow-sm cursor-pointer"
+                                        >
+                                            <option value="operator">✍️ إداري مُدخل (تسجيل مواقف وإدارة الموظفين)</option>
+                                            <option value="admin">👑 مدير النظام (كامل الصلاحيات والحذف)</option>
+                                            <option value="viewer">👁️ مستعرض (عرض وطباعة وبحث فقط)</option>
+                                        </select>
+                                    </div>
 
-                            <div className="space-y-1">
-                                <label className="block text-xs font-bold text-slate-700">👁️ كلمة سر المستعرضين (الحالية: {passwordsConfig.viewer}):</label>
-                                <input
-                                    type="text"
-                                    placeholder={passwordsConfig.viewer}
-                                    value={newViewerPin}
-                                    onChange={(e) => setNewViewerPin(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:border-amber-500"
-                                />
-                            </div>
+                                    <div className="md:col-span-3 space-y-1">
+                                        <label className="block text-[11px] font-black text-slate-700">🔑 كلمة المرور (PIN):</label>
+                                        <input
+                                            type="text"
+                                            value={userFormPin}
+                                            onChange={(e) => setUserFormPin(e.target.value)}
+                                            placeholder="رمز الدخول..."
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-black text-indigo-900 text-center outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition shadow-sm"
+                                        />
+                                    </div>
 
-                            <div className="flex justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowChangePasswordModal(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition"
-                                >
-                                    إلغاء
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs shadow transition"
-                                >
-                                    💾 حفظ كلمات المرور الجديدة
-                                </button>
+                                    <div className="md:col-span-12 flex justify-end gap-2 pt-2">
+                                        {editingUserId && (
+                                            <button
+                                                type="button"
+                                                onClick={handleCancelUserEdit}
+                                                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                                            >
+                                                إلغاء
+                                            </button>
+                                        )}
+                                        <button
+                                            type="submit"
+                                            className={`px-5 py-2 text-white text-xs font-black rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                                                editingUserId 
+                                                    ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700' 
+                                                    : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700'
+                                            }`}
+                                        >
+                                            <span>{editingUserId ? '💾 حفظ تعديل المستخدم' : '➕ إضافة المستخدم للنظام'}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+
+                            {/* جدول قائمة المستخدمين */}
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center px-1">
+                                    <span className="text-xs md:text-sm font-black text-slate-800 flex items-center gap-1.5">
+                                        <span>📋 قائمة المستخدمين المعرفين بالنظام:</span>
+                                        <span className="text-[11px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold">{systemUsers.length} مستخدم</span>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowUserPins(!showUserPins)}
+                                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <span>{showUserPins ? '🙈 إخفاء كلمات المرور' : '👁️ إظهار كلمات المرور'}</span>
+                                    </button>
+                                </div>
+
+                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-right border-collapse text-xs">
+                                            <thead>
+                                                <tr className="bg-slate-100/90 text-slate-700 border-b border-slate-200">
+                                                    <th className="p-3 font-black text-center w-10">ت</th>
+                                                    <th className="p-3 font-black">اسم المستخدم</th>
+                                                    <th className="p-3 font-black text-center">الصلاحية</th>
+                                                    <th className="p-3 font-black text-center">كلمة المرور</th>
+                                                    <th className="p-3 font-black text-center">الحالة</th>
+                                                    <th className="p-3 font-black text-center w-28">الإجراءات</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {systemUsers.map((u, idx) => {
+                                                    const isActive = u.active !== false;
+                                                    let roleBadge = <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200">✍️ إداري مُدخل</span>;
+                                                    if (u.role === 'admin') roleBadge = <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-900 border border-amber-300">👑 مدير النظام</span>;
+                                                    else if (u.role === 'viewer') roleBadge = <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 border border-slate-200">👁️ مستعرض</span>;
+
+                                                    return (
+                                                        <tr key={u.id} className={`hover:bg-slate-50/80 transition ${!isActive ? 'opacity-50 bg-slate-50' : ''}`}>
+                                                            <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
+                                                            <td className="p-3 font-black text-slate-900">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span>{u.name}</span>
+                                                                    {u.id === 'usr_1' && <span className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded border border-indigo-100 font-bold">الماستر</span>}
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-3 text-center">{roleBadge}</td>
+                                                            <td className="p-3 text-center font-mono font-black text-slate-700">
+                                                                <span className="bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 inline-block text-xs">
+                                                                    {showUserPins ? u.pin : '••••'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-3 text-center">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleToggleUserActive(u.id)}
+                                                                    className={`px-2 py-0.5 rounded-full text-[10px] font-black transition cursor-pointer ${
+                                                                        isActive 
+                                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' 
+                                                                            : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
+                                                                    }`}
+                                                                    title="انقر لتبديل حالة التفعيل"
+                                                                >
+                                                                    {isActive ? '🟢 نشط' : '🔴 معطل'}
+                                                                </button>
+                                                            </td>
+                                                            <td className="p-3 text-center">
+                                                                <div className="flex items-center justify-center gap-1">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleEditUserClick(u)}
+                                                                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                                                                        title="تعديل المستخدم"
+                                                                    >
+                                                                        ✏️
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleDeleteUser(u.id)}
+                                                                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                                                        title="حذف المستخدم"
+                                                                    >
+                                                                        🗑️
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
-                        </form>
+                        </div>
+
+                        {/* تذييل النافذة */}
+                        <div className="bg-slate-50 p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                            <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                                <span>☁️</span>
+                                <span>المزامنة السحابية نشطة: تنعكس الإضافات والتعديلات فورياً على كافة الأجهزة والموبايلات.</span>
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    handleCancelUserEdit();
+                                    setShowUserManagementModal(false);
+                                }}
+                                className="w-full sm:w-auto px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs shadow transition cursor-pointer"
+                            >
+                                إغلاق
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
