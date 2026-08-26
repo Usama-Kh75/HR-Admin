@@ -1789,15 +1789,16 @@
                             
                             // موظفو الصباحي:
                             if (isOffDay) {
-                                // في العطل الرسمية وأيام نهاية الأسبوع (الجمعة والسبت):
-                                // إخفاء موظفي الصباحي تماماً إلا إذا تم تثبيت حضور/دوام فعلي أو تكليف استثنائي
+                                // في أيام العطل الرسمية وعطلة نهاية الأسبوع (الجمعة والسبت):
+                                // يتم إخفاء موظفي الصباحي تماماً إلا إذا تم تثبيت حضور أو تكليف فعلي لأحدهم
                                 if (status === 'عطلة رسمية' || status.includes('عطلة') || status === 'استراحة نهاية الأسبوع' || status.includes('نهاية الأسبوع') || status === 'استراحة') {
-                                    return false;
+                                    return false; // إخفاء المتمتع بالعطلة أو استراحة نهاية الأسبوع
                                 }
-                                return true; // يظهر فقط من تم تثبيت دوام أو إضافي أو ورقة عمل له
+                                return true; // يظهر فقط من تم تثبيت حضور/دوام أو إضافي أو ورقة عمل له في العطلة
                             } else {
-                                // في الأيام الاعتيادية: إخفاء الحضور الطبيعي وإظهار الإجازات والاستثناءات فقط
-                                return status !== 'دوام صباحي' && status !== 'حضور فعلي';
+                                // في أيام الدوام الاعتيادية (ليست عطلة):
+                                // يظهر جميع موظفي الصباحي بموقفهم اليومي كالمعتاد
+                                return true;
                             }
                         });
 
@@ -1807,12 +1808,15 @@
                                 content: `━━━ ${unitName} ━━━`
                             });
                             
-                            const sortedStaff = [...unitDailyStaff].sort((a, b) => {
+                            let sortedStaff = [...unitDailyStaff].sort((a, b) => {
                                 if (a.workType !== b.workType) {
                                     return a.workType === 'صباحي' ? -1 : 1;
                                 }
                                 return 0;
                             });
+                            if (unitName === 'مقر الشعبة') {
+                                sortedStaff = ensureTopTwo(sortedStaff);
+                            }
                             
                             sortedStaff.forEach(s => {
                                 const status = getEmployeeDailyStatus(s, dailyReportDate);
