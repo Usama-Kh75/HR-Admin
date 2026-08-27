@@ -860,8 +860,8 @@
             // ===== نظام إدارة المستخدمين والصلاحيات الديناميكي (Dynamic Users & RBAC System) =====
             const defaultSystemUsers = [
                 { id: 'usr_1', name: 'أسامة خليل (مدير النظام)', role: 'admin', pin: '1975', active: true, createdAt: '2026-01-01' },
-                { id: 'usr_2', name: 'إداري الشعبة 1', role: 'operator', pin: '2026', active: true, createdAt: '2026-01-01' },
-                { id: 'usr_3', name: 'إداري الشعبة 2', role: 'operator', pin: '11294', active: true, createdAt: '2026-01-01' },
+                { id: 'usr_2', name: 'قاسم صبري', role: 'operator', pin: '2023', active: true, createdAt: '2026-01-01' },
+                { id: 'usr_3', name: 'حيدر سعد', role: 'operator', pin: '2020', active: true, createdAt: '2026-01-01' },
                 { id: 'usr_4', name: 'مستعرض عام', role: 'viewer', pin: '1234', active: true, createdAt: '2026-01-01' }
             ];
 
@@ -870,7 +870,17 @@
                 if (saved) {
                     try {
                         const parsed = JSON.parse(saved);
-                        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            return parsed.map(u => {
+                                if (u.id === 'usr_2' && (u.pin === '2026' || u.name === 'إداري الشعبة 1')) {
+                                    return { ...u, name: 'قاسم صبري', pin: '2023' };
+                                }
+                                if (u.id === 'usr_3' && (u.pin === '11294' || u.name === 'إداري الشعبة 2')) {
+                                    return { ...u, name: 'حيدر سعد', pin: '2020' };
+                                }
+                                return u;
+                            });
+                        }
                     } catch (e) {}
                 }
                 return defaultSystemUsers;
