@@ -266,18 +266,6 @@
                 text-align: center !important; 
             }
             
-            .print-only-title {
-                display: block !important;
-                color: black !important;
-                font-size: 12pt !important;
-                font-weight: 900 !important;
-                text-align: center !important;
-                border-bottom: 2px solid #000 !important;
-                margin-bottom: 6px !important;
-                padding-bottom: 3px !important;
-                page-break-after: avoid !important;
-            }
-            
             .preview-footer { display: none !important; }
             
             /* محتوى الجدول فائق التكثيف */
@@ -8383,20 +8371,6 @@
                                             </div>
                                         </div>
                                     )}
-
-                                    <div className="print-only-title">
-                                        {previewTitle || (
-                                            view === 'shift' ? 'جدول المناوبين' : 
-                                            view === 'morning' ? 'جدول الصباحي' : 
-                                            view === 'contract' ? 'جدول العقود (موظفو العقود)' : 
-                                            view === 'maa' ? 'جدول الماء' : 
-                                            view === 'maaMorning' ? 'ماء صباحي' :
-                                            view === 'maaShift' ? 'ماء مناوبين' :
-                                            view === 'evaluation' ? 'جدول التقييم' : 
-                                            view === 'units' && selectedUnit ? `منتسبو ${selectedUnit.name}` :
-                                            view === 'dashboard' ? 'نتائج البحث والاستعلام' :
-                                            'الملاك الكامل')}
-                                    </div>
 
                                     <table className="preview-table">
                                         <thead>
