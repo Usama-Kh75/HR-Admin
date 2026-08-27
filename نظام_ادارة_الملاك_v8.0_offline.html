@@ -576,7 +576,7 @@
             
             // حفظ تلقائي عند تغيير البيانات وبثها للسحابة الحية
             React.useEffect(() => {
-                if (staff.length > 1 && !isSyncingRef.current) {
+                if (staff.length > 1 && !isSyncingRef.current && isInitialCloudLoadCompleteRef.current) {
                     safeStorage.setItem('staffData', JSON.stringify(staff));
                     pushDataToCloud();
                 }
@@ -832,7 +832,7 @@
             // حفظ وبث الموقف اليومي تلقائياً للسحابة الحية لتعميمه على كافة أجهزة وموبايلات الشعبة فورياً
             React.useEffect(() => {
                 safeStorage.setItem('dailyStatusOverrides', JSON.stringify(dailyStatusOverrides));
-                if (!isSyncingRef.current && (Object.keys(dailyStatusOverrides).length > 0 || staff.length > 0)) {
+                if (!isSyncingRef.current && isInitialCloudLoadCompleteRef.current && (Object.keys(dailyStatusOverrides).length > 0 || staff.length > 0)) {
                     pushDataToCloud();
                 }
             }, [dailyStatusOverrides]);
@@ -842,7 +842,7 @@
                 safeStorage.setItem('officialHolidaysList', JSON.stringify(officialHolidays));
                 safeStorage.setItem('hourlyLeaveRecords', JSON.stringify(hourlyLeaveRecords));
                 safeStorage.setItem('overtimeHoursRecords', JSON.stringify(overtimeHoursRecords));
-                if (!isSyncingRef.current && staff.length > 0) {
+                if (!isSyncingRef.current && isInitialCloudLoadCompleteRef.current && staff.length > 0) {
                     pushDataToCloud();
                 }
             }, [officialHolidays, hourlyLeaveRecords, overtimeHoursRecords]);
@@ -1126,6 +1126,7 @@
             const FIREBASE_DB_URL = "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle.json";
             const [cloudSyncStatus, setCloudSyncStatus] = useState({ connected: true, syncing: false, lastSync: null });
             const lastCloudTimeRef = React.useRef(null);
+            const isInitialCloudLoadCompleteRef = React.useRef(false);
 
             // جلب البيانات السحابية الحية فورياً وتحديث كافة الأجهزة
             const fetchCloudData = async () => {
@@ -1156,11 +1157,17 @@
                     }
                 } catch (err) {
                     setCloudSyncStatus(prev => ({ ...prev, connected: true, syncing: false }));
+                } finally {
+                    isInitialCloudLoadCompleteRef.current = true;
                 }
             };
 
             // بث التعديلات مباشرة إلى السحابة الحية لتنعكس لدى الجميع في نفس اللحظة
             const pushDataToCloud = async (bundle = null) => {
+                // منع رفع الكاش المحلي القديم إلى السحابة قبل إتمام الجلب الأولي للبيانات السحابية
+                if (!isInitialCloudLoadCompleteRef.current && !bundle) {
+                    return;
+                }
                 try {
                     setCloudSyncStatus(prev => ({ ...prev, syncing: true }));
                     const nowIso = (bundle && bundle.lastCloudUpdate) ? bundle.lastCloudUpdate : new Date().toISOString();
@@ -1202,14 +1209,14 @@
                 } else {
                     window.__IS_ADMIN_DEV_UNLOCKED = false;
                 }
-
-                // حظر جلب أو استهلاك البيانات السحابية طالما المستخدم في شاشة القفل (حماية من تسريب الذاكرة)
-                if (currentUserRole) {
-                    fetchCloudData();
-                    const interval = setInterval(fetchCloudData, 5000);
-                    return () => clearInterval(interval);
-                }
             }, [currentUserRole]);
+
+            // بدء المزامنة السحابية الحية فور فتح التطبيق
+            React.useEffect(() => {
+                fetchCloudData();
+                const interval = setInterval(fetchCloudData, 5000);
+                return () => clearInterval(interval);
+            }, []);
             const [showSyncModal, setShowSyncModal] = useState(false);
             const serverVersionRef = React.useRef(0);
             const isSyncingRef = React.useRef(false);
