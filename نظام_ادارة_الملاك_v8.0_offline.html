@@ -241,20 +241,41 @@
             .preview-header { 
                 background: white !important; 
                 color: black !important; 
-                border-bottom: 1.5px solid #000 !important; 
-                page-break-after: avoid;
-                padding: 2px 5px !important;
-                margin-bottom: 3px !important;
+                border-bottom: 2px solid #000 !important; 
+                page-break-after: avoid !important;
+                padding: 4px 5px !important;
+                margin-bottom: 6px !important;
+                display: block !important;
+                text-align: center !important;
             }
-            .preview-header * { display: none !important; }
+            .preview-header button, .preview-header p { 
+                display: none !important; 
+            }
+            .preview-header div {
+                display: block !important;
+                width: 100% !important;
+                text-align: center !important;
+            }
             .preview-header h2 { 
                 display: block !important; 
                 color: black !important; 
-                font-size: 11pt !important; 
+                font-size: 13pt !important; 
                 font-weight: 900 !important; 
-                margin: 0 !important; 
-                padding: 1px 0 !important; 
+                margin: 0 auto !important; 
+                padding: 2px 0 !important; 
                 text-align: center !important; 
+            }
+            
+            .print-only-title {
+                display: block !important;
+                color: black !important;
+                font-size: 12pt !important;
+                font-weight: 900 !important;
+                text-align: center !important;
+                border-bottom: 2px solid #000 !important;
+                margin-bottom: 6px !important;
+                padding-bottom: 3px !important;
+                page-break-after: avoid !important;
             }
             
             .preview-footer { display: none !important; }
@@ -8362,6 +8383,20 @@
                                             </div>
                                         </div>
                                     )}
+
+                                    <div className="print-only-title">
+                                        {previewTitle || (
+                                            view === 'shift' ? 'جدول المناوبين' : 
+                                            view === 'morning' ? 'جدول الصباحي' : 
+                                            view === 'contract' ? 'جدول العقود (موظفو العقود)' : 
+                                            view === 'maa' ? 'جدول الماء' : 
+                                            view === 'maaMorning' ? 'ماء صباحي' :
+                                            view === 'maaShift' ? 'ماء مناوبين' :
+                                            view === 'evaluation' ? 'جدول التقييم' : 
+                                            view === 'units' && selectedUnit ? `منتسبو ${selectedUnit.name}` :
+                                            view === 'dashboard' ? 'نتائج البحث والاستعلام' :
+                                            'الملاك الكامل')}
+                                    </div>
 
                                     <table className="preview-table">
                                         <thead>
