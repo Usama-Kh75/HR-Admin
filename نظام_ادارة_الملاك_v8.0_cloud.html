@@ -933,51 +933,185 @@
                 }
             }, [pendingDeletionRequest]);
 
+            const FIREBASE_SESSIONS_URL = "https://hr-cooling-default-rtdb.firebaseio.com/active_sessions";
+            const currentSessionIdRef = React.useRef(null);
+            const currentUserIdRef = React.useRef(null);
+            const [activeSessions, setActiveSessions] = useState({});
+            const [isCheckingLogin, setIsCheckingLogin] = useState(false);
+
             const [loginInputRole, setLoginInputRole] = useState('operator');
             const [loginInputPin, setLoginInputPin] = useState('');
             const [loginError, setLoginError] = useState('');
 
-            const handleLogin = (e) => {
+            const handleLogin = async (e) => {
                 if (e) e.preventDefault();
                 setLoginError('');
                 const inputPin = loginInputPin.trim();
+                if (inputPin === undefined || inputPin === null) return;
 
-                // 1. فحص المستخدمين المعرفين في النظام
-                const matched = systemUsers.find(u => u.active !== false && String(u.pin).trim() === inputPin);
-                if (matched) {
-                    setCurrentUserRole(matched.role);
-                    setCurrentUserName(matched.name);
-                    if (matched.role === 'operator' || matched.role === 'admin') {
-                        setDataEntryOperator(matched.name.split('(')[0].trim());
+                setIsCheckingLogin(true);
+
+                // 1. تحديد المستخدم المستهدف
+                let targetUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === inputPin);
+                if (!targetUser) {
+                    if (inputPin === '1975') {
+                        targetUser = systemUsers.find(u => u.role === 'admin') || { id: 'usr_1', name: 'أسامة خليل (مدير النظام)', role: 'admin' };
+                    } else if (inputPin === '' || inputPin === '1234') {
+                        targetUser = { id: 'usr_viewer', name: 'مستعرض عام', role: 'viewer' };
                     }
-                    setShowWelcome(false);
-                    setLoginInputPin('');
-                    setShowLoginModal(false);
+                }
+
+                if (!targetUser) {
+                    setIsCheckingLogin(false);
+                    setLoginError('❌ كلمة المرور غير صحيحة!');
                     return;
                 }
 
-                // 2. فحص كلمة مرور مدير النظام الرئيسية للطوارئ حصراً
-                if (inputPin === '1975') {
-                    setCurrentUserRole('admin');
-                    setCurrentUserName('أسامة خليل (مدير النظام)');
-                    setDataEntryOperator('أسامة خليل');
-                    setShowWelcome(false);
-                    setLoginInputPin('');
-                    setShowLoginModal(false);
-                } else if (inputPin === '' || inputPin === '1234') {
-                    setCurrentUserRole('viewer');
-                    setCurrentUserName('مستعرض عام');
-                    setShowWelcome(false);
-                    setLoginInputPin('');
-                    setShowLoginModal(false);
-                } else {
-                    setLoginError('❌ كلمة المرور غير صحيحة!');
+                // 2. فحص هل الحساب مستخدم حالياً من جهاز آخر (قفل الجلسة الفردية لمنع التزامن)
+                if (targetUser.role !== 'viewer') {
+                    try {
+                        const sessRes = await fetch(`${FIREBASE_SESSIONS_URL}/${targetUser.id}.json?t=${Date.now()}`);
+                        if (sessRes.ok) {
+                            const sessData = await sessRes.json();
+                            if (sessData && sessData.sessionId && sessData.lastSeen) {
+                                const elapsed = Date.now() - sessData.lastSeen;
+                                // إذا كانت الجلسة نشطة (خلال آخر 15 ثانية) ومن جلسة مختلفة
+                                if (elapsed < 15000 && sessData.sessionId !== currentSessionIdRef.current) {
+                                    setIsCheckingLogin(false);
+                                    setLoginError(`⛔ هذا الحساب (${targetUser.name}) قيد الاستخدام حالياً من جهاز آخر!\nلا يمكن لشخصين تسجيل الدخول بنفس كلمة المرور في آن واحد.\n(يرجى تسجيل الخروج من الجهاز الآخر أولاً، أو الانتظار 15 ثانية في حال إغلاق المتصفح).`);
+                                    return;
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.warn("Session check error:", err);
+                    }
                 }
+
+                // 3. حجز الجلسة الفردية للجهاز الحالي
+                const newSessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7);
+                currentSessionIdRef.current = newSessionId;
+                currentUserIdRef.current = targetUser.id;
+
+                if (targetUser.role !== 'viewer') {
+                    try {
+                        await fetch(`${FIREBASE_SESSIONS_URL}/${targetUser.id}.json`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sessionId: newSessionId,
+                                userId: targetUser.id,
+                                name: targetUser.name,
+                                role: targetUser.role,
+                                lastSeen: Date.now()
+                            })
+                        });
+                    } catch (e) {}
+                }
+
+                setCurrentUserRole(targetUser.role);
+                setCurrentUserName(targetUser.name);
+                if (targetUser.role === 'operator' || targetUser.role === 'admin') {
+                    setDataEntryOperator(targetUser.name.split('(')[0].trim());
+                }
+                setIsCheckingLogin(false);
+                setShowWelcome(false);
+                setLoginInputPin('');
+                setShowLoginModal(false);
             };
 
             const handleLogout = () => {
+                if (currentUserIdRef.current) {
+                    const uid = currentUserIdRef.current;
+                    try {
+                        fetch(`${FIREBASE_SESSIONS_URL}/${uid}.json`, { method: 'DELETE' });
+                    } catch (e) {}
+                }
+                currentUserIdRef.current = null;
+                currentSessionIdRef.current = null;
                 setCurrentUserRole(null);
                 setCurrentUserName('');
+            };
+
+            // فحص نبض الجلسة النشطة وطرد الجلسات في حال تسجيل الدخول من مكان آخر
+            React.useEffect(() => {
+                if (!currentUserRole || !currentUserIdRef.current || !currentSessionIdRef.current || currentUserRole === 'viewer') return;
+                const uid = currentUserIdRef.current;
+                const sid = currentSessionIdRef.current;
+
+                const heartbeat = async () => {
+                    try {
+                        const checkRes = await fetch(`${FIREBASE_SESSIONS_URL}/${uid}.json?t=${Date.now()}`);
+                        if (checkRes.ok) {
+                            const sessData = await checkRes.json();
+                            if (sessData && sessData.sessionId && sessData.sessionId !== sid) {
+                                alert('⚠️ تنبيه أمني: تم تسجيل الدخول إلى هذا الحساب من جهاز آخر أو تم فك القفل من قبل مدير النظام. تم إنهاء جلستك على هذا الجهاز.');
+                                handleLogout();
+                                return;
+                            }
+                        }
+                        await fetch(`${FIREBASE_SESSIONS_URL}/${uid}.json`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sessionId: sid,
+                                userId: uid,
+                                name: currentUserName,
+                                role: currentUserRole,
+                                lastSeen: Date.now()
+                            })
+                        });
+                    } catch (e) {}
+                };
+
+                const interval = setInterval(heartbeat, 5000);
+                return () => clearInterval(interval);
+            }, [currentUserRole, currentUserName]);
+
+            // تحرير الجلسة عند إغلاق المتصفح أو التبويب
+            React.useEffect(() => {
+                const handleBeforeUnload = () => {
+                    if (currentUserIdRef.current) {
+                        fetch(`${FIREBASE_SESSIONS_URL}/${currentUserIdRef.current}.json`, {
+                            method: 'DELETE',
+                            keepalive: true
+                        });
+                    }
+                };
+                window.addEventListener('beforeunload', handleBeforeUnload);
+                return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+            }, []);
+
+            // جلب حالة الجلسات النشطة للمستخدمين عند فتح شاشة إدارة المستخدمين
+            React.useEffect(() => {
+                if (!showUserManagementModal) return;
+                const fetchSessions = async () => {
+                    try {
+                        const res = await fetch(`${FIREBASE_SESSIONS_URL}.json?t=${Date.now()}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            setActiveSessions(data || {});
+                        }
+                    } catch (e) {}
+                };
+                fetchSessions();
+                const interval = setInterval(fetchSessions, 3000);
+                return () => clearInterval(interval);
+            }, [showUserManagementModal]);
+
+            const handleForceEvictSession = async (userId, userName) => {
+                if (!confirm(`⚠️ هل أنت متأكد من فك قفل وإنهاء جلسة المستخدم (${userName})؟\nسيتم تحرير الحساب فوراً ليتمكن من تسجيل الدخول من أي جهاز جديد.`)) return;
+                try {
+                    await fetch(`${FIREBASE_SESSIONS_URL}/${userId}.json`, { method: 'DELETE' });
+                    setActiveSessions(prev => {
+                        const next = { ...prev };
+                        delete next[userId];
+                        return next;
+                    });
+                    showCustomAlert(`✅ تم فك قفل جلسة (${userName}) بنجاح!`, 'success');
+                } catch (err) {
+                    alert('❌ خطأ في فك القفل: ' + err.message);
+                }
             };
 
             const handleSaveUser = (e) => {
@@ -5293,17 +5427,22 @@
                             </div>
 
                             {loginError && (
-                                <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-xl text-center">
+                                <div className="p-3 bg-red-50 border-2 border-red-300 text-red-700 text-xs font-bold rounded-xl text-center whitespace-pre-line leading-relaxed shadow-sm">
                                     {loginError}
                                 </div>
                             )}
 
                             <button
                                 type="submit"
-                                className="w-full py-3.5 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-700 hover:from-green-700 hover:to-teal-800 text-white font-bold rounded-xl text-sm shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2"
+                                disabled={isCheckingLogin}
+                                className={`w-full py-3.5 text-white font-bold rounded-xl text-sm shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2 ${
+                                    isCheckingLogin 
+                                        ? 'bg-slate-400 cursor-not-allowed' 
+                                        : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-700 hover:from-green-700 hover:to-teal-800 cursor-pointer'
+                                }`}
                             >
-                                <span>🔓</span>
-                                <span>دخول للنظام</span>
+                                <span>{isCheckingLogin ? '⏳' : '🔓'}</span>
+                                <span>{isCheckingLogin ? 'جارٍ التحقق من الجلسة والصلاحية...' : 'دخول للنظام'}</span>
                             </button>
 
                             <div className="text-center pt-2">
@@ -5455,7 +5594,8 @@
                                                     <th className="p-3 font-black">اسم المستخدم</th>
                                                     <th className="p-3 font-black text-center">الصلاحية</th>
                                                     <th className="p-3 font-black text-center">كلمة المرور</th>
-                                                    <th className="p-3 font-black text-center">الحالة</th>
+                                                    <th className="p-3 font-black text-center">الحساب</th>
+                                                    <th className="p-3 font-black text-center">الجلسة النشطة</th>
                                                     <th className="p-3 font-black text-center w-28">الإجراءات</th>
                                                 </tr>
                                             </thead>
@@ -5465,6 +5605,9 @@
                                                     let roleBadge = <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200">✍️ إداري مُدخل</span>;
                                                     if (u.role === 'admin') roleBadge = <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-900 border border-amber-300">👑 مدير النظام</span>;
                                                     else if (u.role === 'viewer') roleBadge = <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 border border-slate-200">👁️ مستعرض</span>;
+
+                                                    const userSess = activeSessions && activeSessions[u.id];
+                                                    const isOnline = userSess && userSess.lastSeen && (Date.now() - userSess.lastSeen < 15000);
 
                                                     return (
                                                         <tr key={u.id} className={`hover:bg-slate-50/80 transition ${!isActive ? 'opacity-50 bg-slate-50' : ''}`}>
@@ -5492,8 +5635,30 @@
                                                                     }`}
                                                                     title="انقر لتبديل حالة التفعيل"
                                                                 >
-                                                                    {isActive ? '🟢 نشط' : '🔴 معطل'}
+                                                                    {isActive ? '🟢 مفعل' : '🔴 معطل'}
                                                                 </button>
+                                                            </td>
+                                                            <td className="p-3 text-center">
+                                                                {isOnline ? (
+                                                                    <div className="flex items-center justify-center gap-1.5">
+                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse">
+                                                                            <span>🟢</span>
+                                                                            <span>متصل الآن</span>
+                                                                        </span>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleForceEvictSession(u.id, u.name)}
+                                                                            title="إنهاء الجلسة وفك القفل"
+                                                                            className="px-1.5 py-0.5 rounded bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-black transition cursor-pointer border border-rose-300"
+                                                                        >
+                                                                            🔓 فك القفل
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">
+                                                                        ⚪ غير متصل
+                                                                    </span>
+                                                                )}
                                                             </td>
                                                             <td className="p-3 text-center">
                                                                 <div className="flex items-center justify-center gap-1">
