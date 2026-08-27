@@ -896,33 +896,18 @@
             const [userFormPin, setUserFormPin] = useState('');
             const [showUserPins, setShowUserPins] = useState(false);
 
-            const [passwordsConfig, setPasswordsConfig] = useState(() => {
-                const defaultConf = { admin: '1975', operator: '2026', operator2: '11294', viewer: '1234' };
-                const saved = safeStorage.getItem('passwordsConfig');
-                if (saved) {
-                    try {
-                        const parsed = JSON.parse(saved);
-                        return { ...defaultConf, ...parsed };
-                    } catch (e) {}
-                }
-                return defaultConf;
-            });
-            React.useEffect(() => {
-                safeStorage.setItem('passwordsConfig', JSON.stringify(passwordsConfig));
-            }, [passwordsConfig]);
-
             const isAdminPin = (pin) => {
                 if (!pin) return false;
                 const p = String(pin).trim();
                 const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && u.role === 'admin');
-                return !!matchedUser || p === (passwordsConfig.admin || '1975') || p === '1975';
+                return !!matchedUser || p === '1975';
             };
 
             const isOperatorPin = (pin) => {
                 if (!pin) return false;
                 const p = String(pin).trim();
-                const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && u.role === 'operator');
-                return !!matchedUser || p === (passwordsConfig.operator || '2026') || p === (passwordsConfig.operator2 || '11294') || p === '11294' || p === '2026';
+                const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && (u.role === 'operator' || u.role === 'admin'));
+                return !!matchedUser;
             };
 
             const [currentUserRole, setCurrentUserRole] = useState(null);
@@ -961,22 +946,17 @@
                     return;
                 }
 
-                // 2. فحص كلمات المرور الاحتياطية
-                if (inputPin === (passwordsConfig.admin || '1975') || inputPin === '1975') {
+                // 2. فحص كلمة مرور مدير النظام الرئيسية للطوارئ حصراً
+                if (inputPin === '1975') {
                     setCurrentUserRole('admin');
-                    setCurrentUserName('مدير النظام');
+                    setCurrentUserName('أسامة خليل (مدير النظام)');
+                    setDataEntryOperator('أسامة خليل');
                     setShowWelcome(false);
                     setLoginInputPin('');
                     setShowLoginModal(false);
-                } else if (inputPin === (passwordsConfig.operator || '2026') || inputPin === (passwordsConfig.operator2 || '11294') || inputPin === '11294' || inputPin === '2026') {
-                    setCurrentUserRole('operator');
-                    setCurrentUserName('إداري مُدخل');
-                    setShowWelcome(false);
-                    setLoginInputPin('');
-                    setShowLoginModal(false);
-                } else if (inputPin === (passwordsConfig.viewer || '1234') || inputPin === '1234' || inputPin === '') {
+                } else if (inputPin === '' || inputPin === '1234') {
                     setCurrentUserRole('viewer');
-                    setCurrentUserName('مستعرض');
+                    setCurrentUserName('مستعرض عام');
                     setShowWelcome(false);
                     setLoginInputPin('');
                     setShowLoginModal(false);
