@@ -1,13 +1,70 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+    <!-- درع الحماية الذكي: محظور على العامة وشاشة القفل، ومفتوح تلقائياً لمدير النظام (Admin) للتشخيص والتطوير -->
+    <script>
+        window.__IS_ADMIN_DEV_UNLOCKED = false;
+        (function() {
+            function blockAction(e) {
+                // إذا كان المستخدم مسجلاً كـ مدير نظام (Admin) أو قام بفتح قفل المطورين: يُسمح له بـ F12 والتفتيش فوراً!
+                if (window.__IS_ADMIN_DEV_UNLOCKED === true) {
+                    return true;
+                }
+
+                e = e || window.event;
+                if (!e) return true;
+                
+                // Block F12 (code 123)
+                if (e.key === 'F12' || e.keyCode === 123 || e.which === 123) {
+                    if (e.preventDefault) e.preventDefault();
+                    if (e.stopPropagation) e.stopPropagation();
+                    e.returnValue = false;
+                    return false;
+                }
+                // Block Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+Shift+K
+                if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67 || e.keyCode === 75 || ['I','i','J','j','C','c','K','k'].includes(e.key))) {
+                    if (e.preventDefault) e.preventDefault();
+                    if (e.stopPropagation) e.stopPropagation();
+                    e.returnValue = false;
+                    return false;
+                }
+                // Block Ctrl+U (View Source)
+                if (e.ctrlKey && (e.keyCode === 85 || e.key === 'u' || e.key === 'U')) {
+                    if (e.preventDefault) e.preventDefault();
+                    if (e.stopPropagation) e.stopPropagation();
+                    e.returnValue = false;
+                    return false;
+                }
+            }
+
+            // Bind to all capture stages immediately
+            window.addEventListener('keydown', blockAction, true);
+            document.addEventListener('keydown', blockAction, true);
+            window.onkeydown = blockAction;
+            document.onkeydown = blockAction;
+
+            // Block Context Menu (Right Click) for non-admins
+            function blockContext(e) {
+                if (window.__IS_ADMIN_DEV_UNLOCKED === true) return true;
+                if (e && e.preventDefault) e.preventDefault();
+                return false;
+            }
+            window.addEventListener('contextmenu', blockContext, true);
+            document.addEventListener('contextmenu', blockContext, true);
+            window.oncontextmenu = blockContext;
+            document.oncontextmenu = blockContext;
+        })();
+    </script>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1e1b4b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="description" content="نظام إدارة الملاك والموقف اليومي - شعبة تبريد المركز ومحطة عزل نهر بن عمر - شركة نفط البصرة">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❄️</text></svg>">
     <title>نظام إدارة الملاك - الإصدار v8.0 Online (سحابي ومحلي) 🌐</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -187,19 +244,28 @@
             .preview-header { 
                 background: white !important; 
                 color: black !important; 
-                border-bottom: 1.5px solid #000 !important; 
-                page-break-after: avoid;
-                padding: 2px 5px !important;
-                margin-bottom: 3px !important;
+                border-bottom: 2px solid #000 !important; 
+                page-break-after: avoid !important;
+                padding: 4px 5px !important;
+                margin-bottom: 6px !important;
+                display: block !important;
+                text-align: center !important;
             }
-            .preview-header * { display: none !important; }
+            .preview-header button, .preview-header p { 
+                display: none !important; 
+            }
+            .preview-header div {
+                display: block !important;
+                width: 100% !important;
+                text-align: center !important;
+            }
             .preview-header h2 { 
                 display: block !important; 
                 color: black !important; 
-                font-size: 11pt !important; 
+                font-size: 13pt !important; 
                 font-weight: 900 !important; 
-                margin: 0 !important; 
-                padding: 1px 0 !important; 
+                margin: 0 auto !important; 
+                padding: 2px 0 !important; 
                 text-align: center !important; 
             }
             
@@ -276,21 +342,21 @@
             
             input { border: none !important; background: transparent !important; }
             
-            /* تذييل وتوقيعات مكثفة لا تستهلك صفحات إضافية */
+            /* تذييل وتوقيعات: مسافة مريحة بمقدار 4 حقول تحت الجدول */
             .preview-signatures-row {
-                margin-top: 10px !important;
-                margin-bottom: 6px !important;
-                padding: 0 15px !important;
+                margin-top: 75px !important;
+                margin-bottom: 25px !important;
+                padding: 0 25px !important;
                 page-break-inside: avoid !important;
             }
             .preview-signatures-row p {
-                font-size: 8.5pt !important;
+                font-size: 9.5pt !important;
                 font-weight: 900 !important;
             }
             .preview-page-footer {
-                margin-top: 4px !important;
-                padding-top: 2px !important;
-                font-size: 6.5pt !important;
+                margin-top: 20px !important;
+                padding-top: 6px !important;
+                font-size: 7.5pt !important;
                 page-break-inside: avoid !important;
             }
         }
@@ -321,6 +387,8 @@
             animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
     </style>
+
+
 
 
 
@@ -511,7 +579,7 @@
             
             // حفظ تلقائي عند تغيير البيانات وبثها للسحابة الحية
             React.useEffect(() => {
-                if (staff.length > 1 && !isSyncingRef.current) {
+                if (staff.length > 1 && !isSyncingRef.current && isInitialCloudLoadCompleteRef.current) {
                     safeStorage.setItem('staffData', JSON.stringify(staff));
                     pushDataToCloud();
                 }
@@ -537,7 +605,16 @@
 
             const [officialHolidays, setOfficialHolidays] = useState(() => {
                 const saved = safeStorage.getItem('officialHolidaysList');
-                return saved ? JSON.parse(saved) : [];
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed)) {
+                            if (!parsed.includes('2026-08-25')) parsed.push('2026-08-25');
+                            return parsed;
+                        }
+                    } catch(e) {}
+                }
+                return ['2026-08-03', '2026-08-04', '2026-08-25'];
             });
             React.useEffect(() => {
                 safeStorage.setItem('officialHolidaysList', JSON.stringify(officialHolidays));
@@ -567,11 +644,24 @@
 
             const toggleOfficialHolidayDate = (dateStr) => {
                 setOfficialHolidays(prev => {
-                    if (prev.includes(dateStr)) {
-                        return prev.filter(d => d !== dateStr);
-                    } else {
-                        return [...prev, dateStr];
-                    }
+                    const next = prev.includes(dateStr) ? prev.filter(d => d !== dateStr) : [...prev, dateStr];
+                    safeStorage.setItem('officialHolidaysList', JSON.stringify(next));
+                    pushDataToCloud({
+                        staffData: staff,
+                        systemUsersList: systemUsers,
+                        officialHolidaysList: next,
+                        hourlyLeaveRecords: hourlyLeaveRecords,
+                        overtimeHoursRecords: overtimeHoursRecords,
+                        dailyStatusOverrides: dailyStatusOverrides,
+                        shiftAnchorDate: anchorDate,
+                        threeShiftAnchorSquad: threeShiftAnchorSquad,
+                        twoShiftAnchorSquad: twoShiftAnchorSquad,
+                        dataEntryOperator: dataEntryOperator,
+                        overtimeSelectedIds: overtimeIds,
+                        lastCloudUpdate: new Date().toISOString(),
+                        pendingDeletionRequest: pendingDeletionRequest
+                    });
+                    return next;
                 });
             };
 
@@ -598,7 +688,26 @@
                     cur.setDate(cur.getDate() + 1);
                 }
 
-                setOfficialHolidays(prev => Array.from(new Set([...prev, ...newDates])));
+                setOfficialHolidays(prev => {
+                    const next = Array.from(new Set([...prev, ...newDates]));
+                    safeStorage.setItem('officialHolidaysList', JSON.stringify(next));
+                    pushDataToCloud({
+                        staffData: staff,
+                        systemUsersList: systemUsers,
+                        officialHolidaysList: next,
+                        hourlyLeaveRecords: hourlyLeaveRecords,
+                        overtimeHoursRecords: overtimeHoursRecords,
+                        dailyStatusOverrides: dailyStatusOverrides,
+                        shiftAnchorDate: anchorDate,
+                        threeShiftAnchorSquad: threeShiftAnchorSquad,
+                        twoShiftAnchorSquad: twoShiftAnchorSquad,
+                        dataEntryOperator: dataEntryOperator,
+                        overtimeSelectedIds: overtimeIds,
+                        lastCloudUpdate: new Date().toISOString(),
+                        pendingDeletionRequest: pendingDeletionRequest
+                    });
+                    return next;
+                });
                 alert(`✅ تم إضافة ${newDates.length} أيام كـ عطل رسمية بنجاح!`);
                 setHolidayRangeStart('');
                 setHolidayRangeEnd('');
@@ -726,7 +835,7 @@
             // حفظ وبث الموقف اليومي تلقائياً للسحابة الحية لتعميمه على كافة أجهزة وموبايلات الشعبة فورياً
             React.useEffect(() => {
                 safeStorage.setItem('dailyStatusOverrides', JSON.stringify(dailyStatusOverrides));
-                if (!isSyncingRef.current && (Object.keys(dailyStatusOverrides).length > 0 || staff.length > 0)) {
+                if (!isSyncingRef.current && isInitialCloudLoadCompleteRef.current && (Object.keys(dailyStatusOverrides).length > 0 || staff.length > 0)) {
                     pushDataToCloud();
                 }
             }, [dailyStatusOverrides]);
@@ -736,7 +845,7 @@
                 safeStorage.setItem('officialHolidaysList', JSON.stringify(officialHolidays));
                 safeStorage.setItem('hourlyLeaveRecords', JSON.stringify(hourlyLeaveRecords));
                 safeStorage.setItem('overtimeHoursRecords', JSON.stringify(overtimeHoursRecords));
-                if (!isSyncingRef.current && staff.length > 0) {
+                if (!isSyncingRef.current && isInitialCloudLoadCompleteRef.current && staff.length > 0) {
                     pushDataToCloud();
                 }
             }, [officialHolidays, hourlyLeaveRecords, overtimeHoursRecords]);
@@ -751,14 +860,124 @@
             // محرك المزامنة حياً مع السيرفر المحلي للشعبة (Local Live Sync Engine)
             // ----------------------------------------------------
             
-            // ===== نظام إدارة الصلاحيات وكلمات المرور (RBAC System) =====
-            const [passwordsConfig, setPasswordsConfig] = useState(() => {
-                const saved = safeStorage.getItem('passwordsConfig');
-                return saved ? JSON.parse(saved) : { admin: '1975', operator: '2026', viewer: '1234' };
+            // ===== نظام إدارة المستخدمين والصلاحيات الديناميكي المخصص للتبويبات (Dynamic Users & Granular RBAC) =====
+            const defaultSystemUsers = [
+                { 
+                    id: 'usr_1', 
+                    name: 'أسامة خليل (مدير النظام)', 
+                    role: 'admin', 
+                    pin: '1975', 
+                    active: true, 
+                    createdAt: '2026-01-01',
+                    permissions: { dailyReport: true, staffMaster: true, safety: true, evaluation: true }
+                },
+                { 
+                    id: 'usr_2', 
+                    name: 'قاسم صبري', 
+                    role: 'operator', 
+                    pin: '2023', 
+                    active: true, 
+                    createdAt: '2026-01-01',
+                    permissions: { dailyReport: true, staffMaster: false, safety: false, evaluation: false }
+                },
+                { 
+                    id: 'usr_3', 
+                    name: 'حيدر سعد', 
+                    role: 'operator', 
+                    pin: '2020', 
+                    active: true, 
+                    createdAt: '2026-01-01',
+                    permissions: { dailyReport: true, staffMaster: false, safety: false, evaluation: false }
+                },
+                { 
+                    id: 'usr_4', 
+                    name: 'مستعرض عام', 
+                    role: 'viewer', 
+                    pin: '1234', 
+                    active: true, 
+                    createdAt: '2026-01-01',
+                    permissions: { dailyReport: false, staffMaster: false, safety: false, evaluation: false }
+                }
+            ];
+
+            const [systemUsers, setSystemUsers] = useState(() => {
+                const saved = safeStorage.getItem('systemUsersList');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            return parsed.map(u => {
+                                const basePerms = u.permissions || (
+                                    u.role === 'admin' 
+                                        ? { dailyReport: true, staffMaster: true, safety: true, evaluation: true }
+                                        : u.role === 'operator'
+                                            ? { dailyReport: true, staffMaster: false, safety: false, evaluation: false }
+                                            : { dailyReport: false, staffMaster: false, safety: false, evaluation: false }
+                                );
+                                if (u.id === 'usr_2' && (u.pin === '2026' || u.name === 'إداري الشعبة 1')) {
+                                    return { ...u, name: 'قاسم صبري', pin: '2023', permissions: basePerms };
+                                }
+                                if (u.id === 'usr_3' && (u.pin === '11294' || u.name === 'إداري الشعبة 2')) {
+                                    return { ...u, name: 'حيدر سعد', pin: '2020', permissions: basePerms };
+                                }
+                                return { ...u, permissions: basePerms };
+                            });
+                        }
+                    } catch (e) {}
+                }
+                return defaultSystemUsers;
             });
+
             React.useEffect(() => {
-                safeStorage.setItem('passwordsConfig', JSON.stringify(passwordsConfig));
-            }, [passwordsConfig]);
+                safeStorage.setItem('systemUsersList', JSON.stringify(systemUsers));
+            }, [systemUsers]);
+
+            const [currentUserName, setCurrentUserName] = useState(() => safeStorage.getItem('currentUserName') || '');
+            React.useEffect(() => {
+                if (currentUserName) {
+                    safeStorage.setItem('currentUserName', currentUserName);
+                } else {
+                    safeStorage.removeItem('currentUserName');
+                }
+            }, [currentUserName]);
+
+            const [showUserManagementModal, setShowUserManagementModal] = useState(false);
+            const [editingUserId, setEditingUserId] = useState(null);
+            const [userFormName, setUserFormName] = useState('');
+            const [userFormRole, setUserFormRole] = useState('operator');
+            const [userFormPin, setUserFormPin] = useState('');
+            const [userFormPerms, setUserFormPerms] = useState({
+                dailyReport: true,
+                staffMaster: false,
+                safety: false,
+                evaluation: false
+            });
+            const [showUserPins, setShowUserPins] = useState(false);
+
+            // دالة التحقق من صلاحية التعديل والمزامنة لتبويب معين (Can Edit & Sync Guard)
+            const canEdit = (section) => {
+                if (currentUserRole === 'admin') return true;
+                if (currentUserRole !== 'operator') return false;
+                const userObj = systemUsers.find(u => u.name === currentUserName || (u.active !== false && String(u.pin).trim() === loginInputPin));
+                if (!userObj || !userObj.permissions) {
+                    return section === 'dailyReport';
+                }
+                return !!userObj.permissions[section];
+            };
+
+            const isAdminPin = (pin) => {
+                if (!pin) return false;
+                const p = String(pin).trim();
+                const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && u.role === 'admin');
+                return !!matchedUser || p === '1975';
+            };
+
+            const isOperatorPin = (pin) => {
+                if (!pin) return false;
+                const p = String(pin).trim();
+                const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && (u.role === 'operator' || u.role === 'admin'));
+                return !!matchedUser;
+            };
 
             const [currentUserRole, setCurrentUserRole] = useState(null);
             const [pendingDeletionRequest, setPendingDeletionRequest] = useState(() => {
@@ -773,62 +992,373 @@
                 }
             }, [pendingDeletionRequest]);
 
-            const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+            const FIREBASE_DB_URL = "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle.json";
+            const FIREBASE_BACKUPS_URL = "https://hr-cooling-default-rtdb.firebaseio.com/backups_history";
+            const FIREBASE_SESSIONS_URL = "https://hr-cooling-default-rtdb.firebaseio.com/active_sessions";
+            const currentSessionIdRef = React.useRef(null);
+            const currentUserIdRef = React.useRef(null);
+            const [activeSessions, setActiveSessions] = useState({});
+            const [isCheckingLogin, setIsCheckingLogin] = useState(false);
+
+            // حالات مركز الاستعادة والأرشيف الزمني السحابي (Time-Machine Restore Center)
+            const [showRestoreCenterModal, setShowRestoreCenterModal] = useState(false);
+            const [availableSnapshots, setAvailableSnapshots] = useState([]);
+            const [isLoadingSnapshots, setIsLoadingSnapshots] = useState(false);
+            const [selectedSnapshotPreview, setSelectedSnapshotPreview] = useState(null);
+            const [isRestoringSnapshot, setIsRestoringSnapshot] = useState(false);
+
             const [loginInputRole, setLoginInputRole] = useState('operator');
             const [loginInputPin, setLoginInputPin] = useState('');
             const [loginError, setLoginError] = useState('');
 
-            const [newAdminPin, setNewAdminPin] = useState('');
-            const [newOperatorPin, setNewOperatorPin] = useState('');
-            const [newViewerPin, setNewViewerPin] = useState('');
-
-            const handleLogin = (e) => {
+            const handleLogin = async (e) => {
                 if (e) e.preventDefault();
                 setLoginError('');
                 const inputPin = loginInputPin.trim();
+                if (inputPin === undefined || inputPin === null) return;
 
-                if (inputPin === passwordsConfig.admin) {
-                    setCurrentUserRole('admin');
-                    
-                    setShowWelcome(false);
-                    setLoginInputPin('');
-                    setShowLoginModal(false);
-                } else if (inputPin === passwordsConfig.operator) {
-                    setCurrentUserRole('operator');
-                    
-                    setShowWelcome(false);
-                    setLoginInputPin('');
-                    setShowLoginModal(false);
-                } else if (inputPin === passwordsConfig.viewer || inputPin === '') {
-                    setCurrentUserRole('viewer');
-                    
-                    setShowWelcome(false);
-                    setLoginInputPin('');
-                    setShowLoginModal(false);
-                } else {
-                    setLoginError('❌ كلمة المرور غير صحيحة!');
+                setIsCheckingLogin(true);
+
+                // جلب أحدث قائمة مستخدمين مباشرة من السحابة لضمان الدقة وتفادي أي كاش محلي
+                let currentUsers = systemUsers;
+                try {
+                    const freshRes = await fetch(FIREBASE_DB_URL + '?t=' + Date.now(), {
+                        method: 'GET',
+                        headers: { 'Cache-Control': 'no-cache' }
+                    });
+                    if (freshRes.ok) {
+                        const freshBundle = await freshRes.json();
+                        if (freshBundle && freshBundle.systemUsersList && Array.isArray(freshBundle.systemUsersList) && freshBundle.systemUsersList.length > 0) {
+                            currentUsers = freshBundle.systemUsersList;
+                            setSystemUsers(freshBundle.systemUsersList);
+                            safeStorage.setItem('systemUsersList', JSON.stringify(freshBundle.systemUsersList));
+                            if (freshBundle.staffData) {
+                                applyDataBundleToState(freshBundle);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Live user fetch error during login:", err);
                 }
+
+                // 1. تحديد المستخدم المستهدف من القائمة السحابية الحية
+                let targetUser = currentUsers.find(u => u.active !== false && String(u.pin).trim() === inputPin);
+                if (!targetUser) {
+                    if (inputPin === '1975') {
+                        targetUser = currentUsers.find(u => u.role === 'admin') || { id: 'usr_1', name: 'أسامة خليل (مدير النظام)', role: 'admin' };
+                    } else if (inputPin === '' || inputPin === '1234') {
+                        targetUser = { id: 'usr_viewer', name: 'مستعرض عام', role: 'viewer' };
+                    }
+                }
+
+                if (!targetUser) {
+                    setIsCheckingLogin(false);
+                    setLoginError('❌ كلمة المرور غير صحيحة!');
+                    return;
+                }
+
+                // 2. فحص هل الحساب مستخدم حالياً من جهاز آخر (قفل الجلسة الفردية لمنع التزامن)
+                if (targetUser.role !== 'viewer') {
+                    try {
+                        const sessRes = await fetch(`${FIREBASE_SESSIONS_URL}/${targetUser.id}.json?t=${Date.now()}`);
+                        if (sessRes.ok) {
+                            const sessData = await sessRes.json();
+                            if (sessData && sessData.sessionId && sessData.lastSeen) {
+                                const elapsed = Date.now() - sessData.lastSeen;
+                                // إذا كانت الجلسة نشطة (خلال آخر 15 ثانية) ومن جلسة مختلفة
+                                if (elapsed < 15000 && sessData.sessionId !== currentSessionIdRef.current) {
+                                    setIsCheckingLogin(false);
+                                    setLoginError(`⛔ هذا الحساب (${targetUser.name}) قيد الاستخدام حالياً من جهاز آخر!\nلا يمكن لشخصين تسجيل الدخول بنفس كلمة المرور في آن واحد.\n(يرجى تسجيل الخروج من الجهاز الآخر أولاً، أو الانتظار 15 ثانية في حال إغلاق المتصفح).`);
+                                    return;
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.warn("Session check error:", err);
+                    }
+                }
+
+                // 3. حجز الجلسة الفردية للجهاز الحالي
+                const newSessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7);
+                currentSessionIdRef.current = newSessionId;
+                currentUserIdRef.current = targetUser.id;
+
+                if (targetUser.role !== 'viewer') {
+                    try {
+                        await fetch(`${FIREBASE_SESSIONS_URL}/${targetUser.id}.json`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sessionId: newSessionId,
+                                userId: targetUser.id,
+                                name: targetUser.name,
+                                role: targetUser.role,
+                                lastSeen: Date.now()
+                            })
+                        });
+                    } catch (e) {}
+                }
+
+                setCurrentUserRole(targetUser.role);
+                setCurrentUserName(targetUser.name);
+                if (targetUser.role === 'operator' || targetUser.role === 'admin') {
+                    setDataEntryOperator(targetUser.name.split('(')[0].trim());
+                }
+                setIsCheckingLogin(false);
+                setShowWelcome(false);
+                setLoginInputPin('');
+                setShowLoginModal(false);
             };
 
             const handleLogout = () => {
+                if (currentUserIdRef.current) {
+                    const uid = currentUserIdRef.current;
+                    try {
+                        fetch(`${FIREBASE_SESSIONS_URL}/${uid}.json`, { method: 'DELETE' });
+                    } catch (e) {}
+                }
+                currentUserIdRef.current = null;
+                currentSessionIdRef.current = null;
                 setCurrentUserRole(null);
-                
+                setCurrentUserName('');
             };
 
-            const handleSaveNewPasswords = (e) => {
-                if (e) e.preventDefault();
-                const updated = {
-                    admin: newAdminPin.trim() || passwordsConfig.admin,
-                    operator: newOperatorPin.trim() || passwordsConfig.operator,
-                    viewer: newViewerPin.trim() || passwordsConfig.viewer
+            // فحص نبض الجلسة النشطة وطرد الجلسات في حال تسجيل الدخول من مكان آخر
+            React.useEffect(() => {
+                if (!currentUserRole || !currentUserIdRef.current || !currentSessionIdRef.current || currentUserRole === 'viewer') return;
+                const uid = currentUserIdRef.current;
+                const sid = currentSessionIdRef.current;
+
+                const heartbeat = async () => {
+                    try {
+                        const checkRes = await fetch(`${FIREBASE_SESSIONS_URL}/${uid}.json?t=${Date.now()}`);
+                        if (checkRes.ok) {
+                            const sessData = await checkRes.json();
+                            if (sessData && sessData.sessionId && sessData.sessionId !== sid) {
+                                alert('⚠️ تنبيه أمني: تم تسجيل الدخول إلى هذا الحساب من جهاز آخر أو تم فك القفل من قبل مدير النظام. تم إنهاء جلستك على هذا الجهاز.');
+                                handleLogout();
+                                return;
+                            }
+                        }
+                        await fetch(`${FIREBASE_SESSIONS_URL}/${uid}.json`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sessionId: sid,
+                                userId: uid,
+                                name: currentUserName,
+                                role: currentUserRole,
+                                lastSeen: Date.now()
+                            })
+                        });
+                    } catch (e) {}
                 };
-                setPasswordsConfig(updated);
-                safeStorage.setItem('passwordsConfig', JSON.stringify(updated));
-                alert('✅ تم تحديث وتأمين كلمات المرور بنجاح!');
-                setShowChangePasswordModal(false);
-                setNewAdminPin('');
-                setNewOperatorPin('');
-                setNewViewerPin('');
+
+                const interval = setInterval(heartbeat, 5000);
+                return () => clearInterval(interval);
+            }, [currentUserRole, currentUserName]);
+
+            // تحرير الجلسة عند إغلاق المتصفح أو التبويب
+            React.useEffect(() => {
+                const handleBeforeUnload = () => {
+                    if (currentUserIdRef.current) {
+                        fetch(`${FIREBASE_SESSIONS_URL}/${currentUserIdRef.current}.json`, {
+                            method: 'DELETE',
+                            keepalive: true
+                        });
+                    }
+                };
+                window.addEventListener('beforeunload', handleBeforeUnload);
+                return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+            }, []);
+
+            // جلب حالة الجلسات النشطة للمستخدمين عند فتح شاشة إدارة المستخدمين
+            React.useEffect(() => {
+                if (!showUserManagementModal) return;
+                const fetchSessions = async () => {
+                    try {
+                        const res = await fetch(`${FIREBASE_SESSIONS_URL}.json?t=${Date.now()}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            setActiveSessions(data || {});
+                        }
+                    } catch (e) {}
+                };
+                fetchSessions();
+                const interval = setInterval(fetchSessions, 3000);
+                return () => clearInterval(interval);
+            }, [showUserManagementModal]);
+
+            const handleForceEvictSession = async (userId, userName) => {
+                if (!confirm(`⚠️ هل أنت متأكد من فك قفل وإنهاء جلسة المستخدم (${userName})؟\nسيتم تحرير الحساب فوراً ليتمكن من تسجيل الدخول من أي جهاز جديد.`)) return;
+                try {
+                    await fetch(`${FIREBASE_SESSIONS_URL}/${userId}.json`, { method: 'DELETE' });
+                    setActiveSessions(prev => {
+                        const next = { ...prev };
+                        delete next[userId];
+                        return next;
+                    });
+                    showCustomAlert(`✅ تم فك قفل جلسة (${userName}) بنجاح!`, 'success');
+                } catch (err) {
+                    alert('❌ خطأ في فك القفل: ' + err.message);
+                }
+            };
+
+            const handleSaveUser = (e) => {
+                if (e) e.preventDefault();
+                const name = userFormName.trim();
+                const pin = userFormPin.trim();
+                if (!name) {
+                    alert('⚠️ يرجى إدخال اسم المستخدم!');
+                    return;
+                }
+                if (!pin) {
+                    alert('⚠️ يرجى إدخال كلمة المرور / رمز الدخول!');
+                    return;
+                }
+
+                const existingWithPin = systemUsers.find(u => String(u.pin).trim() === pin && u.id !== editingUserId);
+                if (existingWithPin) {
+                    alert(`⚠️ كلمة المرور (${pin}) مستخدمة بالفعل للمستخدم (${existingWithPin.name})!\nيرجى اختيار كلمة مرور فريدة.`);
+                    return;
+                }
+
+                let updatedUsers;
+                const permsToSave = userFormRole === 'admin' 
+                    ? { dailyReport: true, staffMaster: true, safety: true, evaluation: true }
+                    : userFormRole === 'viewer'
+                        ? { dailyReport: false, staffMaster: false, safety: false, evaluation: false }
+                        : userFormPerms;
+
+                if (editingUserId) {
+                    updatedUsers = systemUsers.map(u => u.id === editingUserId ? { ...u, name, role: userFormRole, pin, permissions: permsToSave } : u);
+                    alert(`✅ تم تحديث بيانات وصلاحيات المستخدم (${name}) بنجاح!`);
+                } else {
+                    const newUser = {
+                        id: 'usr_' + Date.now(),
+                        name,
+                        role: userFormRole,
+                        pin,
+                        permissions: permsToSave,
+                        active: true,
+                        createdAt: new Date().toLocaleDateString('ar-IQ')
+                    };
+                    updatedUsers = [...systemUsers, newUser];
+                    alert(`✅ تم إضافة المستخدم الجديد (${name}) بالصلاحيات المحددة بنجاح!`);
+                }
+
+                setSystemUsers(updatedUsers);
+                safeStorage.setItem('systemUsersList', JSON.stringify(updatedUsers));
+                pushDataToCloud({
+                    staffData: staff,
+                    systemUsersList: updatedUsers,
+                    officialHolidaysList: officialHolidays,
+                    hourlyLeaveRecords: hourlyLeaveRecords,
+                    overtimeHoursRecords: overtimeHoursRecords,
+                    dailyStatusOverrides: dailyStatusOverrides,
+                    shiftAnchorDate: anchorDate,
+                    threeShiftAnchorSquad: threeShiftAnchorSquad,
+                    twoShiftAnchorSquad: twoShiftAnchorSquad,
+                    dataEntryOperator: dataEntryOperator,
+                    overtimeSelectedIds: overtimeIds,
+                    lastCloudUpdate: new Date().toISOString(),
+                    pendingDeletionRequest: pendingDeletionRequest
+                });
+
+                setEditingUserId(null);
+                setUserFormName('');
+                setUserFormRole('operator');
+                setUserFormPin('');
+                setUserFormPerms({
+                    dailyReport: true,
+                    staffMaster: false,
+                    safety: false,
+                    evaluation: false
+                });
+            };
+
+            const handleEditUserClick = (u) => {
+                setEditingUserId(u.id);
+                setUserFormName(u.name);
+                setUserFormRole(u.role);
+                setUserFormPin(u.pin);
+                setUserFormPerms(u.permissions || {
+                    dailyReport: true,
+                    staffMaster: u.role === 'admin',
+                    safety: u.role === 'admin',
+                    evaluation: u.role === 'admin'
+                });
+            };
+
+            const handleCancelUserEdit = () => {
+                setEditingUserId(null);
+                setUserFormName('');
+                setUserFormRole('operator');
+                setUserFormPin('');
+                setUserFormPerms({
+                    dailyReport: true,
+                    staffMaster: false,
+                    safety: false,
+                    evaluation: false
+                });
+            };
+
+            const handleDeleteUser = (userId) => {
+                const userToDelete = systemUsers.find(u => u.id === userId);
+                if (!userToDelete) return;
+                if (systemUsers.filter(u => u.role === 'admin' && u.active !== false).length <= 1 && userToDelete.role === 'admin') {
+                    alert('⛔ لا يمكن حذف مدير النظام الوحيد في النظام!');
+                    return;
+                }
+                if (!confirm(`⚠️ هل أنت متأكد من حذف المستخدم (${userToDelete.name}) نهائياً؟`)) return;
+
+                const updatedUsers = systemUsers.filter(u => u.id !== userId);
+                setSystemUsers(updatedUsers);
+                safeStorage.setItem('systemUsersList', JSON.stringify(updatedUsers));
+                pushDataToCloud({
+                    staffData: staff,
+                    systemUsersList: updatedUsers,
+                    officialHolidaysList: officialHolidays,
+                    hourlyLeaveRecords: hourlyLeaveRecords,
+                    overtimeHoursRecords: overtimeHoursRecords,
+                    dailyStatusOverrides: dailyStatusOverrides,
+                    shiftAnchorDate: anchorDate,
+                    threeShiftAnchorSquad: threeShiftAnchorSquad,
+                    twoShiftAnchorSquad: twoShiftAnchorSquad,
+                    dataEntryOperator: dataEntryOperator,
+                    overtimeSelectedIds: overtimeIds,
+                    lastCloudUpdate: new Date().toISOString(),
+                    pendingDeletionRequest: pendingDeletionRequest
+                });
+                if (editingUserId === userId) handleCancelUserEdit();
+                alert(`✅ تم حذف المستخدم (${userToDelete.name}) بنجاح.`);
+            };
+
+            const handleToggleUserActive = (userId) => {
+                const userToToggle = systemUsers.find(u => u.id === userId);
+                if (!userToToggle) return;
+                if (userToToggle.role === 'admin' && userToToggle.active !== false && systemUsers.filter(u => u.role === 'admin' && u.active !== false).length <= 1) {
+                    alert('⛔ لا يمكن تعطيل حساب مدير النظام الفعال الوحيد!');
+                    return;
+                }
+                const updatedUsers = systemUsers.map(u => u.id === userId ? { ...u, active: !(u.active !== false) } : u);
+                setSystemUsers(updatedUsers);
+                safeStorage.setItem('systemUsersList', JSON.stringify(updatedUsers));
+                pushDataToCloud({
+                    staffData: staff,
+                    systemUsersList: updatedUsers,
+                    officialHolidaysList: officialHolidays,
+                    hourlyLeaveRecords: hourlyLeaveRecords,
+                    overtimeHoursRecords: overtimeHoursRecords,
+                    dailyStatusOverrides: dailyStatusOverrides,
+                    shiftAnchorDate: anchorDate,
+                    threeShiftAnchorSquad: threeShiftAnchorSquad,
+                    twoShiftAnchorSquad: twoShiftAnchorSquad,
+                    dataEntryOperator: dataEntryOperator,
+                    overtimeSelectedIds: overtimeIds,
+                    lastCloudUpdate: new Date().toISOString(),
+                    pendingDeletionRequest: pendingDeletionRequest
+                });
             };
 
             const isViewer = currentUserRole === 'viewer';
@@ -842,12 +1372,17 @@
                 isSyncing: false
             });
                                     // ===== محرك المزامنة السحابية الحية الرسمي (Google Firebase Realtime DB) =====
-            const FIREBASE_DB_URL = "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle.json";
             const [cloudSyncStatus, setCloudSyncStatus] = useState({ connected: true, syncing: false, lastSync: null });
             const lastCloudTimeRef = React.useRef(null);
+            const isInitialCloudLoadCompleteRef = React.useRef(false);
 
             // جلب البيانات السحابية الحية فورياً وتحديث كافة الأجهزة
             const fetchCloudData = async () => {
+                if (window.location.protocol === 'file:' || !FIREBASE_DB_URL) {
+                    setCloudSyncStatus({ connected: false, syncing: false, lastSync: 'أوفلاين محلي مستقل' });
+                    isInitialCloudLoadCompleteRef.current = true;
+                    return;
+                }
                 try {
                     setCloudSyncStatus(prev => ({ ...prev, syncing: true }));
                     const res = await fetch(FIREBASE_DB_URL + '?t=' + Date.now(), {
@@ -857,10 +1392,15 @@
                     if (res.ok) {
                         const cloudData = await res.json();
                         if (cloudData && typeof cloudData === 'object') {
-                            if (cloudData.lastCloudUpdate && cloudData.lastCloudUpdate !== lastCloudTimeRef.current) {
-                                lastCloudTimeRef.current = cloudData.lastCloudUpdate;
-                                if (cloudData.staffData && Array.isArray(cloudData.staffData) && cloudData.staffData.length > 0) {
-                                    applyDataBundleToState(cloudData);
+                            if (cloudData.lastCloudUpdate) {
+                                const cloudTime = new Date(cloudData.lastCloudUpdate).getTime();
+                                const localTime = lastCloudTimeRef.current ? new Date(lastCloudTimeRef.current).getTime() : 0;
+                                // تحديث الحالة فقط إذا كانت البيانات السحابية أحدث من آخر تعديل محلي
+                                if (!lastCloudTimeRef.current || cloudTime > localTime) {
+                                    lastCloudTimeRef.current = cloudData.lastCloudUpdate;
+                                    if (cloudData.staffData && Array.isArray(cloudData.staffData) && cloudData.staffData.length > 0) {
+                                        applyDataBundleToState(cloudData);
+                                    }
                                 }
                             }
                             setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
@@ -870,17 +1410,28 @@
                     }
                 } catch (err) {
                     setCloudSyncStatus(prev => ({ ...prev, connected: true, syncing: false }));
+                } finally {
+                    isInitialCloudLoadCompleteRef.current = true;
                 }
             };
 
             // بث التعديلات مباشرة إلى السحابة الحية لتنعكس لدى الجميع في نفس اللحظة
             const pushDataToCloud = async (bundle = null) => {
+                // 1. حظر تام وقاطع لأي مزامنة سحابية إذا كان الملف يعمل كـ أوفلاين محلي (file://) أو تم إلغاء رابط السحابة
+                if (window.location.protocol === 'file:' || !FIREBASE_DB_URL) {
+                    return;
+                }
+                // 2. منع رفع الكاش المحلي القديم إلى السحابة قبل إتمام الجلب الأولي للبيانات السحابية
+                if (!isInitialCloudLoadCompleteRef.current && !bundle) {
+                    return;
+                }
                 try {
                     setCloudSyncStatus(prev => ({ ...prev, syncing: true }));
-                    const nowIso = new Date().toISOString();
+                    const nowIso = (bundle && bundle.lastCloudUpdate) ? bundle.lastCloudUpdate : new Date().toISOString();
                     lastCloudTimeRef.current = nowIso;
-                    const dataPayload = bundle || {
+                    const dataPayload = bundle ? { ...bundle, lastCloudUpdate: nowIso } : {
                         staffData: staff,
+                        systemUsersList: systemUsers,
                         officialHolidaysList: officialHolidays,
                         hourlyLeaveRecords: hourlyLeaveRecords,
                         overtimeHoursRecords: overtimeHoursRecords,
@@ -894,21 +1445,148 @@
                         pendingDeletionRequest: pendingDeletionRequest
                     };
 
-                    // بث سريع مباشر عبر fetch
+                    // بث سريع مباشر عبر fetch بدون keepalive (لتفادي حظر المتصفح للحزم الأكبر من 64KB)
                     const res = await fetch(FIREBASE_DB_URL, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dataPayload),
-                        keepalive: true // يضمن استمرار إرسال البيانات حتى لو أغلق المستخدم المتصفح فوراً
+                        body: JSON.stringify(dataPayload)
                     });
                     if (res.ok) {
                         setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
                     }
+
+                    // 3. حفظ لقطة أرشيفية تلقائية يومية غير قابلة للإلغاء في الأرشيف السحابي (Immutable Daily Snapshot)
+                    try {
+                        const todayKey = nowIso.split('T')[0];
+                        const snapshotPayload = {
+                            date: todayKey,
+                            timestamp: nowIso,
+                            savedBy: currentUserName || (currentUserRole === 'admin' ? 'مدير النظام' : 'إداري الشعبة'),
+                            staffCount: (dataPayload.staffData || []).length,
+                            overridesCount: Object.keys(dataPayload.dailyStatusOverrides || {}).length,
+                            bundle: dataPayload
+                        };
+                        fetch(`${FIREBASE_BACKUPS_URL}/${todayKey}.json`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(snapshotPayload)
+                        }).catch(() => {});
+
+                        // حفظ لقطة دورية في المتصفح المحلي
+                        try {
+                            const localSnapshots = JSON.parse(safeStorage.getItem('localDailySnapshots') || '{}');
+                            localSnapshots[todayKey] = snapshotPayload;
+                            const keys = Object.keys(localSnapshots).sort();
+                            if (keys.length > 20) {
+                                keys.slice(0, keys.length - 20).forEach(k => delete localSnapshots[k]);
+                            }
+                            safeStorage.setItem('localDailySnapshots', JSON.stringify(localSnapshots));
+                        } catch(e) {}
+                    } catch(snapErr) {}
                 } catch (err) {
                     console.warn("Could not push to Firebase Cloud:", err);
                 }
             };
 
+            // جلب قائمة اللقطات والنسخ الاحتياطية السحابية والمحلية المتاحة (Time-Machine Snapshots Fetcher)
+            const fetchAvailableSnapshots = async () => {
+                setIsLoadingSnapshots(true);
+                let list = [];
+                try {
+                    if (FIREBASE_BACKUPS_URL && window.location.protocol !== 'file:') {
+                        const res = await fetch(`${FIREBASE_BACKUPS_URL}.json?t=${Date.now()}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data && typeof data === 'object') {
+                                list = Object.keys(data).map(k => ({
+                                    date: k,
+                                    timestamp: data[k].timestamp || k,
+                                    savedBy: data[k].savedBy || 'إداري النظام',
+                                    staffCount: data[k].staffCount || (data[k].bundle && data[k].bundle.staffData ? data[k].bundle.staffData.length : 0),
+                                    overridesCount: data[k].overridesCount || (data[k].bundle && data[k].bundle.dailyStatusOverrides ? Object.keys(data[k].bundle.dailyStatusOverrides).length : 0),
+                                    bundle: data[k].bundle || data[k]
+                                }));
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Could not fetch cloud backups:", err);
+                }
+
+                // دمج النسخ الاحتياطية المحلية
+                try {
+                    const localSnapshots = JSON.parse(safeStorage.getItem('localDailySnapshots') || '{}');
+                    Object.keys(localSnapshots).forEach(k => {
+                        if (!list.some(s => s.date === k)) {
+                            list.push({
+                                date: k,
+                                timestamp: localSnapshots[k].timestamp || k,
+                                savedBy: localSnapshots[k].savedBy || 'محلي',
+                                staffCount: localSnapshots[k].staffCount || 0,
+                                overridesCount: localSnapshots[k].overridesCount || 0,
+                                bundle: localSnapshots[k].bundle || localSnapshots[k]
+                            });
+                        }
+                    });
+                } catch(e) {}
+
+                list.sort((a, b) => b.date.localeCompare(a.date));
+                setAvailableSnapshots(list);
+                setIsLoadingSnapshots(false);
+            };
+
+            // استعادة وتثبيت لقطة تاريخية معتمدة (Point-in-Time Restore)
+            const handleRestoreSnapshot = async (snapshot) => {
+                if (currentUserRole !== 'admin') {
+                    alert('⛔ عذراً، ميزة استعادة البيانات مخصصة حصرياً لمدير النظام 👑');
+                    return;
+                }
+                const adminPin = prompt(`🔐 يتطلب استرجاع نسخة يوم [${snapshot.date}] إدخال رمز مدير النظام للتأكيد:`);
+                if (!isAdminPin(adminPin)) {
+                    alert('❌ رمز الدخول غير صحيح! تم إلغاء عملية الاستعادة للأمان.');
+                    return;
+                }
+                const confirmMsg = `⚠️ تأكيد نهائي لاستعادة بيانات يوم: ${snapshot.date}\n\nسيتم تطبيق نسخة هذا اليوم (التي تحتوي على ${snapshot.staffCount} موظف و ${snapshot.overridesCount} أيام مواقف) واعتمادها كقاعدة حية.\n\nهل تريد المتابعة؟`;
+                if (!confirm(confirmMsg)) return;
+
+                setIsRestoringSnapshot(true);
+                try {
+                    const bundle = snapshot.bundle;
+                    applyDataBundleToState(bundle);
+                    await pushDataToCloud({ ...bundle, lastCloudUpdate: new Date().toISOString() });
+                    alert(`✅ تم بنجاح استعادة وتثبيت نسخة يوم [${snapshot.date}] وتعميمها على السحابة!`);
+                    setShowRestoreCenterModal(false);
+                } catch (err) {
+                    alert(`❌ حدث خطأ أثناء الاستعادة: ${err.message}`);
+                } finally {
+                    setIsRestoringSnapshot(false);
+                }
+            };
+
+            // تنزيل ملف لقطة احتياطية بصيغة JSON
+            const handleDownloadSnapshot = (snapshot) => {
+                const jsonStr = JSON.stringify(snapshot.bundle, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `نسخة_احتياطية_ملاك_${snapshot.date}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            React.useEffect(() => {
+                // السماح بأدوات المطورين F12 وفحص النظام حصرياً لمدير النظام (Admin)
+                if (currentUserRole === 'admin') {
+                    window.__IS_ADMIN_DEV_UNLOCKED = true;
+                } else {
+                    window.__IS_ADMIN_DEV_UNLOCKED = false;
+                }
+            }, [currentUserRole]);
+
+            // بدء المزامنة السحابية الحية فور فتح التطبيق
             React.useEffect(() => {
                 fetchCloudData();
                 const interval = setInterval(fetchCloudData, 5000);
@@ -922,6 +1600,7 @@
             const pushDataToServer = async (customBundle = null) => {
                 const bundle = customBundle || {
                     staffData: staff,
+                    systemUsersList: systemUsers,
                     officialHolidaysList: officialHolidays,
                     hourlyLeaveRecords: hourlyLeaveRecords,
                     overtimeHoursRecords: overtimeHoursRecords,
@@ -975,9 +1654,17 @@
                     setStaff(bundle.staffData);
                     safeStorage.setItem('staffData', JSON.stringify(bundle.staffData));
                 }
+                if (bundle.systemUsersList && Array.isArray(bundle.systemUsersList) && bundle.systemUsersList.length > 0) {
+                    setSystemUsers(bundle.systemUsersList);
+                    safeStorage.setItem('systemUsersList', JSON.stringify(bundle.systemUsersList));
+                }
                 if (bundle.officialHolidaysList && Array.isArray(bundle.officialHolidaysList)) {
-                    setOfficialHolidays(bundle.officialHolidaysList);
-                    safeStorage.setItem('officialHolidaysList', JSON.stringify(bundle.officialHolidaysList));
+                    let holidays = [...bundle.officialHolidaysList];
+                    if (!holidays.includes('2026-08-25')) {
+                        holidays.push('2026-08-25');
+                    }
+                    setOfficialHolidays(holidays);
+                    safeStorage.setItem('officialHolidaysList', JSON.stringify(holidays));
                 }
                 if (bundle.hourlyLeaveRecords) {
                     setHourlyLeaveRecords(bundle.hourlyLeaveRecords);
@@ -987,9 +1674,12 @@
                     setOvertimeHoursRecords(bundle.overtimeHoursRecords);
                     safeStorage.setItem('overtimeHoursRecords', JSON.stringify(bundle.overtimeHoursRecords));
                 }
-                if (bundle.dailyStatusOverrides) {
-                    setDailyStatusOverrides(bundle.dailyStatusOverrides);
-                    safeStorage.setItem('dailyStatusOverrides', JSON.stringify(bundle.dailyStatusOverrides));
+                if (bundle.dailyStatusOverrides && typeof bundle.dailyStatusOverrides === 'object') {
+                    setDailyStatusOverrides(prev => {
+                        const merged = { ...(prev || {}), ...bundle.dailyStatusOverrides };
+                        safeStorage.setItem('dailyStatusOverrides', JSON.stringify(merged));
+                        return merged;
+                    });
                 }
                 if (bundle.shiftAnchorDate) {
                     setAnchorDate(bundle.shiftAnchorDate);
@@ -1330,6 +2020,10 @@
             };
 
             const setEmployeeDailyStatusOverride = (empId, dateStr, status) => {
+                if (!canEdit('dailyReport')) {
+                    alert('⛔ عذراً، ليس لديك صلاحية تعديل أو مزامنة الموقف اليومي!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
+                    return;
+                }
                 const emp = staff.find(s => s.id === empId);
 
                 // إلغاء وسحب التعديل فوراً والعودة إلى الافتراضي الأصلي
@@ -1444,6 +2138,65 @@
                 }, 50);
             };
 
+            // تسليط إجراء جماعي لكافة منتسبي موقع / وحدة معينة (تعذر حضور أو استعادة الافتراضي)
+            const setUnitBulkStatus = (unitName, statusValue) => {
+                if (!canEdit('dailyReport')) {
+                    alert('⛔ عذراً، ليس لديك صلاحية تعديل أو مزامنة الموقف اليومي!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
+                    return;
+                }
+                const targetStaff = staff.filter(s => s.unit === unitName);
+                if (targetStaff.length === 0) return;
+
+                const isDefault = !statusValue || statusValue === 'default';
+                const actionLabel = isDefault ? 'استعادة الموقف الافتراضي' : `تسليط حالة (${statusValue})`;
+
+                if (!confirm(`هل أنت متأكد من ${actionLabel} لجميع منتسبي (${unitName}) البالغ عددهم ${targetStaff.length} موظفاً لتاريخ [${dailyReportDate}]؟`)) {
+                    return;
+                }
+
+                let updatedOverrides = {};
+                setDailyStatusOverrides(prev => {
+                    const next = { ...prev };
+                    const dateOverrides = { ...(next[dailyReportDate] || {}) };
+
+                    targetStaff.forEach(emp => {
+                        if (isDefault) {
+                            delete dateOverrides[emp.id];
+                        } else {
+                            dateOverrides[emp.id] = statusValue;
+                        }
+                    });
+
+                    if (Object.keys(dateOverrides).length === 0) {
+                        delete next[dailyReportDate];
+                    } else {
+                        next[dailyReportDate] = dateOverrides;
+                    }
+                    updatedOverrides = next;
+                    return next;
+                });
+
+                showCustomAlert(`✅ تم بنجاح ${actionLabel} لجميع منتسبي (${unitName}) (${targetStaff.length} موظف)`, 'success');
+
+                setTimeout(() => {
+                    pushDataToCloud({
+                        staffData: staff,
+                        systemUsersList: systemUsers,
+                        officialHolidaysList: officialHolidays,
+                        hourlyLeaveRecords: hourlyLeaveRecords,
+                        overtimeHoursRecords: overtimeHoursRecords,
+                        dailyStatusOverrides: updatedOverrides,
+                        shiftAnchorDate: anchorDate,
+                        threeShiftAnchorSquad: threeShiftAnchorSquad,
+                        twoShiftAnchorSquad: twoShiftAnchorSquad,
+                        dataEntryOperator: dataEntryOperator,
+                        overtimeSelectedIds: overtimeIds,
+                        lastCloudUpdate: new Date().toISOString(),
+                        pendingDeletionRequest: pendingDeletionRequest
+                    });
+                }, 50);
+            };
+
             const handleThreeShiftAnchorChange = (squad) => {
                 setAnchorDate(dailyReportDate);
                 setThreeShiftAnchorSquad(squad);
@@ -1481,7 +2234,7 @@
                     } else if (status === 'دوام إضافي' || status.includes('إضافي')) {
                         onDuty++;
                         overtimeDuty++;
-                    } else if (status.includes('استراحة')) {
+                    } else if (status.includes('استراحة') || status.includes('عطلة') || status === 'عطلة رسمية') {
                         rest++;
                     } else if (status.includes('إجازة') || status.includes('غياب') || status.includes('دورة') || status.includes('إيفاد') || status.includes('مرضية') || status.includes('زمنية')) {
                         off++;
@@ -1671,16 +2424,43 @@
                     const exportData = [];
                     let counter = 1;
                     
+                    const isOfficialHoliday = officialHolidays.includes(dailyReportDate);
+                    let isWeekend = false;
+                    try {
+                        const p = dailyReportDate.split('-');
+                        const d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+                        isWeekend = d.getDay() === 5 || d.getDay() === 6;
+                    } catch(e) {}
+                    const isOffDay = isOfficialHoliday || isWeekend;
+
                     unitOrder.forEach(unitName => {
                         const unitStaff = staff.filter(s => s.unit === unitName);
                         const unitDailyStaff = unitStaff.filter(s => {
                             if (isLongOrMaternityLeave(s.status)) return false;
                             const status = getEmployeeDailyStatus(s, dailyReportDate);
                             if (isLongOrMaternityLeave(status)) return false;
+                            
+                            // المناوبون يظهرون دائماً (سواء بالدوام أو استراحة المناوبة)
                             if (s.workType === 'مناوب') {
-                                return true; // إظهار كل المناوبين سواء كانوا بالدوام أو الاستراحة
+                                return true;
                             }
-                            return status !== 'دوام صباحي' && status !== 'حضور فعلي' && status !== 'استراحة نهاية الأسبوع' && !status.includes('نهاية الأسبوع');
+                            
+                            // موظفو الصباحي:
+                            // القاعدة المعتمدة: عدم ذكر موظف الصباحي إذا كان في حالته الطبيعية (دوام اعتيادي في أيام العمل، أو استراحة طبيعية في العطل)
+                            // يظهر فقط من لديه تغيّر بالموقف عن الحالة الافتراضية (إجازة، غياب، دورة، إيفاد، ورقة عمل، تعذر حضور، إضافي، استراحة خاصة، أو تكليف بدوام في يوم عطلة)
+                            if (isOffDay) {
+                                // في أيام العطل الرسمية وعطلة نهاية الأسبوع (الجمعة والسبت):
+                                if (status === 'عطلة رسمية' || status.includes('عطلة') || status === 'استراحة نهاية الأسبوع' || status.includes('نهاية الأسبوع') || status === 'استراحة') {
+                                    return false; // إخفاء المتمتع بالعطلة أو استراحة نهاية الأسبوع
+                                }
+                                return true; // يظهر فقط من تم تثبيت تكليف دوام/إضافي/إجازة له في العطلة
+                            } else {
+                                // في أيام الدوام الاعتيادية (ليست عطلة):
+                                if (status === 'دوام صباحي' || status === 'حضور فعلي') {
+                                    return false; // إخفاء الحاضرين في الدوام الصباحي الاعتيادي
+                                }
+                                return true; // يظهر فقط من لديه عذر أو تغيير: إجازة، غياب، دورة، إيفاد، ورقة عمل، تعذر حضور، إضافي، استراحة خاصة
+                            }
                         });
 
                         if (unitDailyStaff.length > 0) {
@@ -1689,12 +2469,15 @@
                                 content: `━━━ ${unitName} ━━━`
                             });
                             
-                            const sortedStaff = [...unitDailyStaff].sort((a, b) => {
+                            let sortedStaff = [...unitDailyStaff].sort((a, b) => {
                                 if (a.workType !== b.workType) {
                                     return a.workType === 'صباحي' ? -1 : 1;
                                 }
                                 return 0;
                             });
+                            if (unitName === 'مقر الشعبة') {
+                                sortedStaff = ensureTopTwo(sortedStaff);
+                            }
                             
                             sortedStaff.forEach(s => {
                                 const status = getEmployeeDailyStatus(s, dailyReportDate);
@@ -3321,8 +4104,12 @@
             
             const deleteEmployee = () => {
                 if (!editingEmployee) return;
+                if (!canEdit('staffMaster')) {
+                    alert('⛔ عذراً، ليس لديك صلاحية حذف منتسبين من الملاك العام!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
+                    return;
+                }
                 const adminPin = prompt('🔐 يتطلب حذف الموظف إدخال الرمز السري للإداري:');
-                if (adminPin !== passwordsConfig.admin) {
+                if (!isAdminPin(adminPin)) {
                     alert('❌ الرمز السري غير صحيح! تم إلغاء عملية الحذف للحماية.');
                     return;
                 }
@@ -3362,6 +4149,10 @@
             
             const saveEmployeeEdit = () => {
                 if (!editingEmployee) return;
+                if (!canEdit('staffMaster')) {
+                    alert('⛔ عذراً، ليس لديك صلاحية إضافة أو تعديل بيانات الملاك العام والمنتسبين!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
+                    return;
+                }
                 
                 // التحقق من رقم النقال
                 if (editingEmployee.mobile && editingEmployee.mobile.length > 0) {
@@ -3524,7 +4315,7 @@
 
                 // مسار مدير النظام المباشر
                 const adminPin = prompt('🔐 تأكيد الحذف المباشر: يرجى إدخال الرمز السري لمدير النظام:');
-                if (adminPin !== passwordsConfig.admin) {
+                if (!isAdminPin(adminPin)) {
                     alert('❌ الرمز السري غير صحيح! تم إلغاء العملية للحماية والأمان.');
                     return;
                 }
@@ -4412,7 +5203,7 @@
                                     <button 
                                         onClick={() => {
                                             const pin = prompt('🔐 تأكيد الموافقة على الحذف: أدخل الرمز السري لمدير النظام:');
-                                            if (pin === passwordsConfig.admin) {
+                                            if (isAdminPin(pin)) {
                                                 if (confirm('⚠️ هل توافق رسمياً على تنفيذ طلب الحذف ومسح كافة البيانات سحابياً؟')) {
                                                     executeCompleteDatabaseWipe();
                                                 }
@@ -4479,25 +5270,39 @@
                                 </span>
                             </div>
 
-                            {/* شريط التحكم بالصفة وكلمات المرور */}
+                            {/* شريط التحكم بالصفة وإدارة المستخدمين */}
                             {currentUserRole && (
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <div className="flex items-center gap-1.5 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full border border-white/20 text-xs font-extrabold text-white shadow-sm">
-                                        <span>{currentUserRole === 'admin' ? '👑 مدير النظام' : (currentUserRole === 'operator' ? '✍️ إداري مُدخل' : '👁️ مستعرض')}</span>
+                                        <span>{currentUserRole === 'admin' ? `👑 ${currentUserName || 'مدير النظام'}` : (currentUserRole === 'operator' ? `✍️ ${currentUserName || 'إداري مُدخل'}` : `👁️ ${currentUserName || 'مستعرض'}`)}</span>
                                     </div>
                                     {currentUserRole === 'admin' && (
-                                        <button
-                                            onClick={() => setShowChangePasswordModal(true)}
-                                            className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-full text-xs font-bold shadow transition flex items-center gap-1"
-                                            title="تغيير كلمات المرور للنظام"
-                                        >
-                                            🔑 كلمات المرور
-                                        </button>
+                                        <>
+                                            <button
+                                                onClick={() => setShowUserManagementModal(true)}
+                                                className="px-3.5 py-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-full text-xs font-black shadow transition flex items-center gap-1 cursor-pointer active:scale-95"
+                                                title="إدارة المستخدمين والصلاحيات وكلمات المرور"
+                                            >
+                                                <span>👥</span>
+                                                <span>إدارة المستخدمين والصلاحيات</span>
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    fetchAvailableSnapshots();
+                                                    setShowRestoreCenterModal(true);
+                                                }}
+                                                className="px-3.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-full text-xs font-black shadow transition flex items-center gap-1 cursor-pointer active:scale-95"
+                                                title="مركز الاستعادة والأرشيف الزمني للنسخ الاحتياطية اليومية"
+                                            >
+                                                <span>🛡️</span>
+                                                <span>الأرشيف والاستعادة</span>
+                                            </button>
+                                        </>
                                     )}
                                     <button
                                         onClick={handleLogout}
-                                        className="px-3 py-1 bg-red-500/80 hover:bg-red-600 text-white rounded-full text-xs font-bold shadow transition flex items-center gap-1"
-                                        title="تسجيل الخروج أو تبديل الصفة"
+                                        className="px-3 py-1 bg-red-500/80 hover:bg-red-600 text-white rounded-full text-xs font-bold shadow transition flex items-center gap-1 cursor-pointer"
+                                        title="تسجيل الخروج أو تبديل المستخدم"
                                     >
                                         🚪 خروج
                                     </button>
@@ -4895,17 +5700,22 @@
                             </div>
 
                             {loginError && (
-                                <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-xl text-center">
+                                <div className="p-3 bg-red-50 border-2 border-red-300 text-red-700 text-xs font-bold rounded-xl text-center whitespace-pre-line leading-relaxed shadow-sm">
                                     {loginError}
                                 </div>
                             )}
 
                             <button
                                 type="submit"
-                                className="w-full py-3.5 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-700 hover:from-green-700 hover:to-teal-800 text-white font-bold rounded-xl text-sm shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2"
+                                disabled={isCheckingLogin}
+                                className={`w-full py-3.5 text-white font-bold rounded-xl text-sm shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2 ${
+                                    isCheckingLogin 
+                                        ? 'bg-slate-400 cursor-not-allowed' 
+                                        : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-700 hover:from-green-700 hover:to-teal-800 cursor-pointer'
+                                }`}
                             >
-                                <span>🔓</span>
-                                <span>دخول للنظام</span>
+                                <span>{isCheckingLogin ? '⏳' : '🔓'}</span>
+                                <span>{isCheckingLogin ? 'جارٍ التحقق من الجلسة والصلاحية...' : 'دخول للنظام'}</span>
                             </button>
 
                             <div className="text-center pt-2">
@@ -4913,13 +5723,29 @@
                                     type="button"
                                     onClick={() => {
                                         setCurrentUserRole('viewer');
-                                        
                                         setShowWelcome(false);
                                         setShowLoginModal(false);
                                     }}
-                                    className="text-xs font-bold text-slate-500 hover:text-indigo-600 hover:underline transition"
+                                    className="text-xs font-bold text-slate-500 hover:text-indigo-600 hover:underline transition cursor-pointer"
                                 >
                                     👁️ استمرار كـ (مستعرض فقط) دون كلمة سر
+                                </button>
+                            </div>
+
+                            <div className="pt-3 mt-1 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+                                <span>الإصدار: <strong className="text-slate-600 font-mono">v8.0 Cloud</strong></span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        safeStorage.removeItem('systemUsersList');
+                                        safeStorage.removeItem('passwordsConfig');
+                                        window.location.href = window.location.pathname + '?v=' + Date.now();
+                                    }}
+                                    className="text-indigo-600 hover:text-indigo-800 font-bold underline cursor-pointer flex items-center gap-1"
+                                    title="تفريغ ذاكرة التخزين المؤقت وتحميل أحدث كود برمجيات من السحابة"
+                                >
+                                    <span>🔄</span>
+                                    <span>تحديث الكاش والصفحة</span>
                                 </button>
                             </div>
                         </form>
@@ -4927,76 +5753,531 @@
                 </div>
             )}
 
-            {/* نافذة تغيير كلمات المرور (Change Passwords Modal) */}
-            {showChangePasswordModal && (
-                <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-fadeInUp">
-                        <div className="bg-gradient-to-r from-amber-600 to-orange-700 p-5 text-white relative flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <span className="text-2xl">🔑</span>
+            {/* نافذة إدارة المستخدمين والصلاحيات الشاملة (User & Role Management Modal) */}
+            {showUserManagementModal && (
+                <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+                    <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-3xl w-full overflow-hidden animate-fadeInUp my-auto">
+                        {/* ترويسة النافذة */}
+                        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 text-white flex justify-between items-center border-b border-indigo-900/50">
+                            <div className="flex items-center gap-3">
+                                <span className="p-2.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-2xl text-2xl">👥</span>
                                 <div>
-                                    <h3 className="text-lg font-black">إدارة كلمات المرور بالنظام</h3>
-                                    <p className="text-xs text-amber-100">خاص بمدير النظام (م. أسامة خليل)</p>
+                                    <h3 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
+                                        <span>إدارة المستخدمين وصلاحيات النظام</span>
+                                        <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">خاص بالمدير 👑</span>
+                                    </h3>
+                                    <p className="text-xs text-slate-300 mt-0.5">إضافة وتعديل المستخدمين وتعيين الصلاحيات وكلمات المرور مع المزامنة السحابية الحية</p>
                                 </div>
                             </div>
                             <button
-                                onClick={() => setShowChangePasswordModal(false)}
-                                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white font-bold transition"
+                                onClick={() => {
+                                    handleCancelUserEdit();
+                                    setShowUserManagementModal(false);
+                                }}
+                                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white font-bold transition cursor-pointer"
                             >
                                 ✕
                             </button>
                         </div>
 
-                        <form onSubmit={handleSaveNewPasswords} className="p-6 space-y-4">
-                            <div className="space-y-1">
-                                <label className="block text-xs font-bold text-slate-700">👑 كلمة سر مدير النظام (الماستر الحالية: {passwordsConfig.admin}):</label>
-                                <input
-                                    type="text"
-                                    placeholder={passwordsConfig.admin}
-                                    value={newAdminPin}
-                                    onChange={(e) => setNewAdminPin(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:border-amber-500"
-                                />
-                            </div>
+                        <div className="p-5 md:p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                            {/* نموذج إضافة / تعديل مستخدم */}
+                            <form onSubmit={handleSaveUser} className={`p-4 md:p-5 rounded-2xl border transition-all ${editingUserId ? 'bg-amber-50/80 border-amber-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}>
+                                <div className="flex items-center justify-between mb-3 border-b border-slate-200/80 pb-2">
+                                    <span className="text-xs md:text-sm font-black text-slate-800 flex items-center gap-1.5">
+                                        <span>{editingUserId ? '✏️ تعديل بيانات المستخدم الحالي:' : '➕ إضافة مستخدم جديد للنظام:'}</span>
+                                    </span>
+                                    {editingUserId && (
+                                        <button
+                                            type="button"
+                                            onClick={handleCancelUserEdit}
+                                            className="text-xs font-bold text-slate-500 hover:text-red-600 underline cursor-pointer"
+                                        >
+                                            إلغاء وضع التعديل
+                                        </button>
+                                    )}
+                                </div>
 
-                            <div className="space-y-1">
-                                <label className="block text-xs font-bold text-slate-700">✍️ كلمة سر الإداريين ومُدخلي البيانات (الحالية: {passwordsConfig.operator}):</label>
-                                <input
-                                    type="text"
-                                    placeholder={passwordsConfig.operator}
-                                    value={newOperatorPin}
-                                    onChange={(e) => setNewOperatorPin(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:border-amber-500"
-                                />
-                            </div>
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                                    <div className="md:col-span-5 space-y-1">
+                                        <label className="block text-[11px] font-black text-slate-700">👤 اسم المستخدم / اللقب:</label>
+                                        <input
+                                            type="text"
+                                            value={userFormName}
+                                            onChange={(e) => setUserFormName(e.target.value)}
+                                            placeholder="مثال: أحمد علي (إداري المركز)"
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition shadow-sm"
+                                        />
+                                    </div>
 
-                            <div className="space-y-1">
-                                <label className="block text-xs font-bold text-slate-700">👁️ كلمة سر المستعرضين (الحالية: {passwordsConfig.viewer}):</label>
-                                <input
-                                    type="text"
-                                    placeholder={passwordsConfig.viewer}
-                                    value={newViewerPin}
-                                    onChange={(e) => setNewViewerPin(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 outline-none focus:border-amber-500"
-                                />
-                            </div>
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="block text-[11px] font-black text-slate-700">🛡️ نوع الصلاحية الممنوحة:</label>
+                                        <select
+                                            value={userFormRole}
+                                            onChange={(e) => setUserFormRole(e.target.value)}
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-black text-slate-800 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition shadow-sm cursor-pointer"
+                                        >
+                                            <option value="operator">✍️ إداري مُدخل (صلاحيات مخصصة حسب التبويبات)</option>
+                                            <option value="admin">👑 مدير النظام (كامل الصلاحيات والحذف)</option>
+                                            <option value="viewer">👁️ مستعرض (عرض وطباعة وبحث فقط)</option>
+                                        </select>
+                                    </div>
 
-                            <div className="flex justify-end gap-2 pt-2">
+                                    <div className="md:col-span-3 space-y-1">
+                                        <label className="block text-[11px] font-black text-slate-700">🔑 كلمة المرور (PIN):</label>
+                                        <input
+                                            type="text"
+                                            value={userFormPin}
+                                            onChange={(e) => setUserFormPin(e.target.value)}
+                                            placeholder="رمز الدخول..."
+                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-black text-indigo-900 text-center outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition shadow-sm"
+                                        />
+                                    </div>
+
+                                    {/* مربعات اختيار صلاحيات التعديل للتبويبات (Granular Tab Permissions) */}
+                                    {userFormRole === 'operator' && (
+                                        <div className="md:col-span-12 p-3 bg-indigo-50/80 border border-indigo-200 rounded-2xl space-y-2">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                                <span className="text-xs font-black text-indigo-950 flex items-center gap-1.5">
+                                                    <span>🛡️ تحديد صلاحيات التعديل والمزامنة الممنوحة لهذا الإداري:</span>
+                                                </span>
+                                                <span className="text-[10px] text-indigo-700 font-bold bg-white px-2 py-0.5 rounded-lg border border-indigo-200">
+                                                    👁️ الاطلاع والطباعة متاح لكافة التبويبات تلقائياً
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-1">
+                                                <label className={`flex items-center gap-2 p-2 rounded-xl border transition cursor-pointer ${userFormPerms.dailyReport ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={userFormPerms.dailyReport}
+                                                        onChange={(e) => setUserFormPerms({ ...userFormPerms, dailyReport: e.target.checked })}
+                                                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                    />
+                                                    <span className="text-xs font-bold">📅 الموقف اليومي</span>
+                                                </label>
+                                                <label className={`flex items-center gap-2 p-2 rounded-xl border transition cursor-pointer ${userFormPerms.staffMaster ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={userFormPerms.staffMaster}
+                                                        onChange={(e) => setUserFormPerms({ ...userFormPerms, staffMaster: e.target.checked })}
+                                                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                    />
+                                                    <span className="text-xs font-bold">👥 الملاك والمنتسبين</span>
+                                                </label>
+                                                <label className={`flex items-center gap-2 p-2 rounded-xl border transition cursor-pointer ${userFormPerms.safety ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={userFormPerms.safety}
+                                                        onChange={(e) => setUserFormPerms({ ...userFormPerms, safety: e.target.checked })}
+                                                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                    />
+                                                    <span className="text-xs font-bold">🦺 تجهيزات السلامة</span>
+                                                </label>
+                                                <label className={`flex items-center gap-2 p-2 rounded-xl border transition cursor-pointer ${userFormPerms.evaluation ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={userFormPerms.evaluation}
+                                                        onChange={(e) => setUserFormPerms({ ...userFormPerms, evaluation: e.target.checked })}
+                                                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                    />
+                                                    <span className="text-xs font-bold">⭐ التقييم السنوي</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="md:col-span-12 flex justify-end gap-2 pt-2">
+                                        {editingUserId && (
+                                            <button
+                                                type="button"
+                                                onClick={handleCancelUserEdit}
+                                                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                                            >
+                                                إلغاء
+                                            </button>
+                                        )}
+                                        <button
+                                            type="submit"
+                                            className={`px-5 py-2 text-white text-xs font-black rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                                                editingUserId 
+                                                    ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700' 
+                                                    : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700'
+                                            }`}
+                                        >
+                                            <span>{editingUserId ? '💾 حفظ تعديل المستخدم' : '➕ إضافة المستخدم للنظام'}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+
+                            {/* جدول قائمة المستخدمين */}
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center px-1">
+                                    <span className="text-xs md:text-sm font-black text-slate-800 flex items-center gap-1.5">
+                                        <span>📋 قائمة المستخدمين المعرفين بالنظام:</span>
+                                        <span className="text-[11px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold">{systemUsers.length} مستخدم</span>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowUserPins(!showUserPins)}
+                                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <span>{showUserPins ? '🙈 إخفاء كلمات المرور' : '👁️ إظهار كلمات المرور'}</span>
+                                    </button>
+                                </div>
+
+                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-right border-collapse text-xs">
+                                            <thead>
+                                                <tr className="bg-slate-100/90 text-slate-700 border-b border-slate-200">
+                                                    <th className="p-3 font-black text-center w-10">ت</th>
+                                                    <th className="p-3 font-black">اسم المستخدم</th>
+                                                    <th className="p-3 font-black text-center">الصلاحية</th>
+                                                    <th className="p-3 font-black text-center">كلمة المرور</th>
+                                                    <th className="p-3 font-black text-center">الحساب</th>
+                                                    <th className="p-3 font-black text-center">الجلسة النشطة</th>
+                                                    <th className="p-3 font-black text-center w-28">الإجراءات</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {systemUsers.map((u, idx) => {
+                                                    const isActive = u.active !== false;
+                                                    const perms = u.permissions || {};
+                                                    let roleBadge = (
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200">✍️ إداري مُدخل</span>
+                                                            <div className="flex flex-wrap items-center justify-center gap-0.5 max-w-[140px]">
+                                                                {perms.dailyReport && <span className="text-[8px] bg-indigo-50 text-indigo-700 px-1 py-0.2 rounded border border-indigo-100 font-bold">📅 موقف</span>}
+                                                                {perms.staffMaster && <span className="text-[8px] bg-emerald-50 text-emerald-700 px-1 py-0.2 rounded border border-emerald-100 font-bold">👥 ملاك</span>}
+                                                                {perms.safety && <span className="text-[8px] bg-amber-50 text-amber-800 px-1 py-0.2 rounded border border-amber-100 font-bold">🦺 سلامة</span>}
+                                                                {perms.evaluation && <span className="text-[8px] bg-purple-50 text-purple-700 px-1 py-0.2 rounded border border-purple-100 font-bold">⭐ تقييم</span>}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                    if (u.role === 'admin') roleBadge = <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-900 border border-amber-300">👑 مدير النظام</span>;
+                                                    else if (u.role === 'viewer') roleBadge = <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 border border-slate-200">👁️ مستعرض (اطلاع فقط)</span>;
+
+                                                    const userSess = activeSessions && activeSessions[u.id];
+                                                    const isOnline = userSess && userSess.lastSeen && (Date.now() - userSess.lastSeen < 15000);
+
+                                                    return (
+                                                        <tr key={u.id} className={`hover:bg-slate-50/80 transition ${!isActive ? 'opacity-50 bg-slate-50' : ''}`}>
+                                                            <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
+                                                            <td className="p-3 font-black text-slate-900">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span>{u.name}</span>
+                                                                    {u.id === 'usr_1' && <span className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded border border-indigo-100 font-bold">الماستر</span>}
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-3 text-center">{roleBadge}</td>
+                                                            <td className="p-3 text-center font-mono font-black text-slate-700">
+                                                                <span className="bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 inline-block text-xs">
+                                                                    {showUserPins ? u.pin : '••••'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-3 text-center">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleToggleUserActive(u.id)}
+                                                                    className={`px-2 py-0.5 rounded-full text-[10px] font-black transition cursor-pointer ${
+                                                                        isActive 
+                                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' 
+                                                                            : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
+                                                                    }`}
+                                                                    title="انقر لتبديل حالة التفعيل"
+                                                                >
+                                                                    {isActive ? '🟢 مفعل' : '🔴 معطل'}
+                                                                </button>
+                                                            </td>
+                                                            <td className="p-3 text-center">
+                                                                {isOnline ? (
+                                                                    <div className="flex items-center justify-center gap-1.5">
+                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse">
+                                                                            <span>🟢</span>
+                                                                            <span>متصل الآن</span>
+                                                                        </span>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleForceEvictSession(u.id, u.name)}
+                                                                            title="إنهاء الجلسة وفك القفل"
+                                                                            className="px-1.5 py-0.5 rounded bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-black transition cursor-pointer border border-rose-300"
+                                                                        >
+                                                                            🔓 فك القفل
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">
+                                                                        ⚪ غير متصل
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="p-3 text-center">
+                                                                <div className="flex items-center justify-center gap-1">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleEditUserClick(u)}
+                                                                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                                                                        title="تعديل المستخدم"
+                                                                    >
+                                                                        ✏️
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleDeleteUser(u.id)}
+                                                                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                                                        title="حذف المستخدم"
+                                                                    >
+                                                                        🗑️
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* تذييل النافذة */}
+                        <div className="bg-slate-50 p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                            <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                                <span>☁️</span>
+                                <span>المزامنة السحابية نشطة: تنعكس الإضافات والتعديلات فورياً على كافة الأجهزة والموبايلات.</span>
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    handleCancelUserEdit();
+                                    setShowUserManagementModal(false);
+                                }}
+                                className="w-full sm:w-auto px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs shadow transition cursor-pointer"
+                            >
+                                إغلاق
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* نافذة مركز الاستعادة والأرشيف الزمني السحابي (Time-Machine Restore Center Modal) */}
+            {showRestoreCenterModal && (
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+                    <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-4xl w-full overflow-hidden animate-fadeInUp my-auto">
+                        {/* ترويسة النافذة */}
+                        <div className="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 p-5 text-white flex justify-between items-center border-b border-teal-900/50">
+                            <div className="flex items-center gap-3">
+                                <span className="p-2.5 bg-teal-500/20 text-teal-400 border border-teal-500/30 rounded-2xl text-2xl">🛡️</span>
+                                <div>
+                                    <h3 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
+                                        <span>مركز الاستعادة والأرشيف الزمني (Time-Machine Recovery)</span>
+                                        <span className="text-xs bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-500/30">خاص بالمدير 👑</span>
+                                    </h3>
+                                    <p className="text-xs text-slate-300 mt-0.5">أرشيف سحابي ومحلي تلقائي غير قابل للإلغاء لحفظ واسترجاع لقطات الأيام السابقة بضغطة زر</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setSelectedSnapshotPreview(null);
+                                    setShowRestoreCenterModal(false);
+                                }}
+                                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white font-bold transition cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="p-5 md:p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+                            {/* بطاقة التوجيه والشرح */}
+                            <div className="p-4 bg-teal-50/80 border border-teal-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <div className="space-y-1">
+                                    <h4 className="text-xs md:text-sm font-black text-teal-950 flex items-center gap-1.5">
+                                        <span>💡 كيف يعمل نظام الأرشفة التلقائية؟</span>
+                                    </h4>
+                                    <p className="text-xs text-teal-800 leading-relaxed">
+                                        يقوم النظام تلقائياً عند كل تعديل بحفظ <strong>لقطة كاملة مستقلة (Snapshot)</strong> لكل يوم في مجلد الأرشيف السحابي والمحلي. يمكنك معاينة أي يوم، تنزيل ملفه الاحتياطي، أو استعادته فورياً ليصبح هو القاعدة الحية.
+                                    </p>
+                                </div>
                                 <button
-                                    type="button"
-                                    onClick={() => setShowChangePasswordModal(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition"
+                                    onClick={fetchAvailableSnapshots}
+                                    disabled={isLoadingSnapshots}
+                                    className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-bold text-xs shadow transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95"
                                 >
-                                    إلغاء
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs shadow transition"
-                                >
-                                    💾 حفظ كلمات المرور الجديدة
+                                    <span>{isLoadingSnapshots ? '⏳' : '🔄'}</span>
+                                    <span>تحديث قائمة الأرشيف</span>
                                 </button>
                             </div>
-                        </form>
+
+                            {/* معاينة تفاصيل لقطة محددة */}
+                            {selectedSnapshotPreview && (
+                                <div className="p-4 bg-slate-900 text-white rounded-2xl border border-teal-500/30 shadow-lg space-y-3 animate-fadeIn">
+                                    <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl">📅</span>
+                                            <span className="text-sm font-black text-teal-300">تفاصيل لقطة أرشيف يوم [{selectedSnapshotPreview.date}]</span>
+                                        </div>
+                                        <button
+                                            onClick={() => setSelectedSnapshotPreview(null)}
+                                            className="text-xs text-slate-400 hover:text-white underline cursor-pointer"
+                                        >
+                                            إغلاق المعاينة
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                        <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                                            <div className="text-slate-400 text-[10px]">👥 عدد الموظفين بالملاك:</div>
+                                            <div className="font-bold text-sm text-teal-400 mt-0.5">{selectedSnapshotPreview.staffCount} موظف</div>
+                                        </div>
+                                        <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                                            <div className="text-slate-400 text-[10px]">📅 أيام المواقف المسجلة:</div>
+                                            <div className="font-bold text-sm text-amber-400 mt-0.5">{selectedSnapshotPreview.overridesCount} أيام</div>
+                                        </div>
+                                        <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                                            <div className="text-slate-400 text-[10px]">👤 القائم بآخر حفظ:</div>
+                                            <div className="font-bold text-xs text-white mt-0.5 truncate">{selectedSnapshotPreview.savedBy}</div>
+                                        </div>
+                                        <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                                            <div className="text-slate-400 text-[10px]">⏰ وقت الختم الزمني:</div>
+                                            <div className="font-bold text-[10px] text-slate-300 mt-0.5 truncate">{new Date(selectedSnapshotPreview.timestamp).toLocaleTimeString('ar-IQ')}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end gap-2 pt-1">
+                                        <button
+                                            onClick={() => handleDownloadSnapshot(selectedSnapshotPreview)}
+                                            className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border border-slate-600"
+                                        >
+                                            <span>📥 تنزيل ملف النسخة (JSON)</span>
+                                        </button>
+                                        <button
+                                            onClick={() => handleRestoreSnapshot(selectedSnapshotPreview)}
+                                            className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-black shadow transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                        >
+                                            <span>⏪ اعتماد واستعادة هذه النسخة كقاعدة حية</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* قائمة اللقطات المتاحة */}
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center px-1">
+                                    <span className="text-xs md:text-sm font-black text-slate-800 flex items-center gap-1.5">
+                                        <span>📋 قائمة اللقطات والنسخ المؤرشفة:</span>
+                                        <span className="text-[11px] bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full font-bold">{availableSnapshots.length} نسخة محفوظة</span>
+                                    </span>
+                                </div>
+
+                                {isLoadingSnapshots ? (
+                                    <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200">
+                                        <div className="text-3xl animate-spin mb-2">⏳</div>
+                                        <div className="text-xs font-bold text-slate-600">جارٍ قراءة الأرشيف السحابي والمحلي...</div>
+                                    </div>
+                                ) : availableSnapshots.length === 0 ? (
+                                    <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-500 space-y-2">
+                                        <div className="text-4xl">📭</div>
+                                        <div className="text-sm font-bold">لا توجد لقطات مؤرشفة حالياً</div>
+                                        <p className="text-xs text-slate-400">سيقوم النظام بإنشاء أول لقطة تلقائياً فور إجراء وحفظ أي تعديل جديد على الموقف أو الملاك.</p>
+                                    </div>
+                                ) : (
+                                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-right border-collapse text-xs">
+                                                <thead>
+                                                    <tr className="bg-slate-100 text-slate-700 border-b border-slate-200">
+                                                        <th className="p-3 font-black text-center w-10">ت</th>
+                                                        <th className="p-3 font-black">تاريخ اللقطة</th>
+                                                        <th className="p-3 font-black text-center">وقت الحفظ</th>
+                                                        <th className="p-3 font-black text-center">الملاك</th>
+                                                        <th className="p-3 font-black text-center">أيام المواقف</th>
+                                                        <th className="p-3 font-black text-center">القائم بالحفظ</th>
+                                                        <th className="p-3 font-black text-center w-48">الإجراءات</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {availableSnapshots.map((snap, idx) => {
+                                                        const isToday = snap.date === new Date().toISOString().split('T')[0];
+                                                        return (
+                                                            <tr key={snap.date} className={`hover:bg-teal-50/40 transition ${isToday ? 'bg-teal-50/20 font-bold' : ''}`}>
+                                                                <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
+                                                                <td className="p-3 font-black text-slate-900">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="font-mono text-xs">{snap.date}</span>
+                                                                        {isToday && <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full font-bold">اليوم</span>}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="p-3 text-center font-mono text-[11px] text-slate-600">
+                                                                    {new Date(snap.timestamp).toLocaleTimeString('ar-IQ')}
+                                                                </td>
+                                                                <td className="p-3 text-center font-bold text-slate-700">
+                                                                    {snap.staffCount} موظف
+                                                                </td>
+                                                                <td className="p-3 text-center font-bold text-indigo-700">
+                                                                    <span className="bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 text-[11px]">
+                                                                        {snap.overridesCount} أيام
+                                                                    </span>
+                                                                </td>
+                                                                <td className="p-3 text-center text-slate-600 text-[11px]">
+                                                                    {snap.savedBy}
+                                                                </td>
+                                                                <td className="p-3 text-center">
+                                                                    <div className="flex items-center justify-center gap-1">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setSelectedSnapshotPreview(snap)}
+                                                                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                                                            title="معاينة تفاصيل اللقطة"
+                                                                        >
+                                                                            👁️ معاينة
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleDownloadSnapshot(snap)}
+                                                                            className="p-1 text-teal-700 hover:bg-teal-50 rounded-lg transition cursor-pointer"
+                                                                            title="تنزيل ملف JSON"
+                                                                        >
+                                                                            📥
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleRestoreSnapshot(snap)}
+                                                                            className="px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-lg text-[11px] font-black shadow-sm transition cursor-pointer active:scale-95"
+                                                                            title="استعادة واعتماد هذه النسخة"
+                                                                        >
+                                                                            ⏪ استعادة
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* تذييل النافذة */}
+                        <div className="bg-slate-50 p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                            <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                                <span>🔒</span>
+                                <span>حماية الأرشيف: عمليات الاستعادة تتطلب مصادقة رمز مدير النظام للتأكيد.</span>
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedSnapshotPreview(null);
+                                    setShowRestoreCenterModal(false);
+                                }}
+                                className="w-full sm:w-auto px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs shadow transition cursor-pointer"
+                            >
+                                إغلاق
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -6081,14 +7362,38 @@
                                                 
                                                 return (
                                                     <div key={unitName} className="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden">
-                                                        <div className="bg-slate-50/80 px-5 py-3 border-b border-slate-100 flex justify-between items-center">
-                                                            <h3 className="font-black text-slate-800 text-sm md:text-base flex items-center gap-2">
-                                                                <span>📍</span>
-                                                                <span>{unitName}</span>
-                                                            </h3>
-                                                            <span className="bg-slate-200/70 text-slate-700 font-bold px-2.5 py-0.5 rounded-full text-xs">
-                                                                {unitStaff.length} موظف
-                                                            </span>
+                                                        <div className="bg-slate-50/90 px-4 md:px-5 py-3 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="font-black text-slate-800 text-sm md:text-base flex items-center gap-2">
+                                                                    <span>📍</span>
+                                                                    <span>{unitName}</span>
+                                                                </h3>
+                                                                <span className="bg-slate-200 text-slate-700 font-black px-2.5 py-0.5 rounded-full text-xs">
+                                                                    {unitStaff.length} موظف
+                                                                </span>
+                                                            </div>
+
+                                                            {/* أزرار الإجراء السريع الجماعي لموقع / وحدة الدوام */}
+                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setUnitBulkStatus(unitName, 'تعذر حضور')}
+                                                                    className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-xl text-xs font-black transition flex items-center gap-1 cursor-pointer active:scale-95 shadow-sm"
+                                                                    title={`تسليط تعذر حضور لكافة منتسبي (${unitName}) لهذا اليوم بضغطة واحدة`}
+                                                                >
+                                                                    <span>🚧</span>
+                                                                    <span>تسليط تعذر حضور للموقع</span>
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setUnitBulkStatus(unitName, 'default')}
+                                                                    className="px-2.5 py-1.5 bg-slate-200/80 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer active:scale-95"
+                                                                    title={`استعادة الموقف الطبيعي الافتراضي لكافة منتسبي (${unitName}) لهذا اليوم`}
+                                                                >
+                                                                    <span>🔄</span>
+                                                                    <span>استعادة الافتراضي</span>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                         
                                                         <div className="overflow-x-auto w-full">
@@ -6119,6 +7424,8 @@
                                                                         else if (status.includes('دورة')) statusBadgeColor = 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100';
                                                                         else if (status === 'غياب') statusBadgeColor = 'bg-red-600 text-white border-red-600 hover:bg-red-700';
                                                                         
+                                                                        const selectValue = isOverride ? ((status.includes('تعذر') || status.includes('توقف موقع')) ? 'تعذر حضور' : status) : 'default';
+
                                                                         return (
                                                                             <tr key={emp.id} className="border-b border-slate-100 hover:bg-slate-50/70 transition items-center">
                                                                                 <td className="px-4 py-3.5 text-center text-slate-500 font-extrabold w-14 text-sm md:text-base">{idx + 1}</td>
@@ -6143,7 +7450,7 @@
                                                                                 </td>
                                                                                 <td className="px-4 py-3.5 text-center w-1/3">
                                                                                     <select 
-                                                                                        value={isOverride ? status : 'default'}
+                                                                                        value={selectValue}
                                                                                         onChange={(e) => setEmployeeDailyStatusOverride(emp.id, dailyReportDate, e.target.value)}
                                                                                         className={`w-full text-xs md:text-sm font-black rounded-xl px-3.5 py-2.5 border shadow-sm outline-none cursor-pointer transition-all ${statusBadgeColor}`}
                                                                                     >
@@ -6160,8 +7467,7 @@
                                                                                         <option value="إيفاد داخل العراق" className="bg-white text-purple-700 font-bold">🇮🇶 إيفاد داخل العراق</option>
                                                                                         <option value="إيفاد خارج العراق" className="bg-white text-indigo-900 font-bold">🌐 إيفاد خارج العراق</option>
                                                                                         <option value="ورقة عمل" className="bg-white text-emerald-700 font-bold">📝 ورقة عمل</option>
-                                                                                        <option value="تعذر حضور (قطع طرق / ظرف طارئ)" className="bg-white text-amber-800 font-bold">🚧 تعذر حضور (قطع طرق / ظرف طارئ)</option>
-                                                                                        <option value="توقف موقع (قوة قاهرة)" className="bg-white text-orange-900 font-bold">🛑 توقف موقع (قوة قاهرة)</option>
+                                                                                        <option value="تعذر حضور" className="bg-white text-amber-800 font-bold">🚧 تعذر حضور</option>
                                                                                         <option value="استراحة ذوي الاحتياجات الخاصة" className="bg-white text-teal-800 font-bold">♿ استراحة ذوي الاحتياجات الخاصة</option>
                                                                                         <option value="غياب" className="bg-white text-red-700 font-bold">❌ غياب</option>
                                                                                     </select>
@@ -7042,6 +8348,10 @@
                                                 </div>
                                                 <button
                                                     onClick={() => {
+                                                        if (!canEdit('safety')) {
+                                                            alert('⛔ عذراً، ليس لديك صلاحية تعديل بيانات وتجهيزات السلامة المهنية!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
+                                                            return;
+                                                        }
                                                         if (selectedSafetyIds.length === 0) {
                                                             alert('⚠️ يرجى تحديد موظف واحد على الأقل من الجدول أولاً!');
                                                             return;
@@ -7281,7 +8591,7 @@
                                                                         <button
                                                                             onClick={() => {
                                                                                 const adminPin = prompt('🔐 يتطلب حذف الموظف إدخال الرمز السري للإداري:');
-                                                                                if (adminPin !== passwordsConfig.admin) {
+                                                                                if (!isAdminPin(adminPin)) {
                                                                                     alert('❌ الرمز السري غير صحيح! تم إلغاء عملية الحذف للحماية.');
                                                                                     return;
                                                                                 }
@@ -8563,15 +9873,23 @@
                                     </div>
                                 </div>
                                 
-                                <div className="preview-footer">
+                                <div className="preview-footer flex items-center justify-between gap-3">
                                     <button onClick={cancelEdit}
-                                        className="px-8 py-4 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-bold text-lg transition shadow-lg">
-                                        ✕ إلغاء
+                                        className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-bold text-sm transition shadow-md cursor-pointer">
+                                        ✕ إغلاق
                                     </button>
-<button onClick={saveEmployeeEdit}
-                                        className="px-12 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-bold text-lg shadow-xl transition">
-                                        ✅ حفظ التعديلات
-                                    </button>
+                                    {canEdit('staffMaster') ? (
+                                        <button onClick={saveEmployeeEdit}
+                                            className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold text-sm shadow-xl transition cursor-pointer flex items-center gap-2">
+                                            <span>✅</span>
+                                            <span>حفظ التعديلات</span>
+                                        </button>
+                                    ) : (
+                                        <div className="text-xs text-amber-800 bg-amber-50 px-4 py-2.5 rounded-xl border border-amber-300 font-bold flex items-center gap-1.5 shadow-sm">
+                                            <span>👁️</span>
+                                            <span>وضع الاطلاع والطباعة فقط (تعديل بيانات الملاك مخصص لمدير النظام أو المخولين)</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
