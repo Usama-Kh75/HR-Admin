@@ -860,12 +860,44 @@
             // محرك المزامنة حياً مع السيرفر المحلي للشعبة (Local Live Sync Engine)
             // ----------------------------------------------------
             
-            // ===== نظام إدارة المستخدمين والصلاحيات الديناميكي (Dynamic Users & RBAC System) =====
+            // ===== نظام إدارة المستخدمين والصلاحيات الديناميكي المخصص للتبويبات (Dynamic Users & Granular RBAC) =====
             const defaultSystemUsers = [
-                { id: 'usr_1', name: 'أسامة خليل (مدير النظام)', role: 'admin', pin: '1975', active: true, createdAt: '2026-01-01' },
-                { id: 'usr_2', name: 'قاسم صبري', role: 'operator', pin: '2023', active: true, createdAt: '2026-01-01' },
-                { id: 'usr_3', name: 'حيدر سعد', role: 'operator', pin: '2020', active: true, createdAt: '2026-01-01' },
-                { id: 'usr_4', name: 'مستعرض عام', role: 'viewer', pin: '1234', active: true, createdAt: '2026-01-01' }
+                { 
+                    id: 'usr_1', 
+                    name: 'أسامة خليل (مدير النظام)', 
+                    role: 'admin', 
+                    pin: '1975', 
+                    active: true, 
+                    createdAt: '2026-01-01',
+                    permissions: { dailyReport: true, staffMaster: true, safety: true, evaluation: true }
+                },
+                { 
+                    id: 'usr_2', 
+                    name: 'قاسم صبري', 
+                    role: 'operator', 
+                    pin: '2023', 
+                    active: true, 
+                    createdAt: '2026-01-01',
+                    permissions: { dailyReport: true, staffMaster: false, safety: false, evaluation: false }
+                },
+                { 
+                    id: 'usr_3', 
+                    name: 'حيدر سعد', 
+                    role: 'operator', 
+                    pin: '2020', 
+                    active: true, 
+                    createdAt: '2026-01-01',
+                    permissions: { dailyReport: true, staffMaster: false, safety: false, evaluation: false }
+                },
+                { 
+                    id: 'usr_4', 
+                    name: 'مستعرض عام', 
+                    role: 'viewer', 
+                    pin: '1234', 
+                    active: true, 
+                    createdAt: '2026-01-01',
+                    permissions: { dailyReport: false, staffMaster: false, safety: false, evaluation: false }
+                }
             ];
 
             const [systemUsers, setSystemUsers] = useState(() => {
@@ -875,13 +907,20 @@
                         const parsed = JSON.parse(saved);
                         if (Array.isArray(parsed) && parsed.length > 0) {
                             return parsed.map(u => {
+                                const basePerms = u.permissions || (
+                                    u.role === 'admin' 
+                                        ? { dailyReport: true, staffMaster: true, safety: true, evaluation: true }
+                                        : u.role === 'operator'
+                                            ? { dailyReport: true, staffMaster: false, safety: false, evaluation: false }
+                                            : { dailyReport: false, staffMaster: false, safety: false, evaluation: false }
+                                );
                                 if (u.id === 'usr_2' && (u.pin === '2026' || u.name === 'إداري الشعبة 1')) {
-                                    return { ...u, name: 'قاسم صبري', pin: '2023' };
+                                    return { ...u, name: 'قاسم صبري', pin: '2023', permissions: basePerms };
                                 }
                                 if (u.id === 'usr_3' && (u.pin === '11294' || u.name === 'إداري الشعبة 2')) {
-                                    return { ...u, name: 'حيدر سعد', pin: '2020' };
+                                    return { ...u, name: 'حيدر سعد', pin: '2020', permissions: basePerms };
                                 }
-                                return u;
+                                return { ...u, permissions: basePerms };
                             });
                         }
                     } catch (e) {}
@@ -907,7 +946,24 @@
             const [userFormName, setUserFormName] = useState('');
             const [userFormRole, setUserFormRole] = useState('operator');
             const [userFormPin, setUserFormPin] = useState('');
+            const [userFormPerms, setUserFormPerms] = useState({
+                dailyReport: true,
+                staffMaster: false,
+                safety: false,
+                evaluation: false
+            });
             const [showUserPins, setShowUserPins] = useState(false);
+
+            // دالة التحقق من صلاحية التعديل والمزامنة لتبويب معين (Can Edit & Sync Guard)
+            const canEdit = (section) => {
+                if (currentUserRole === 'admin') return true;
+                if (currentUserRole !== 'operator') return false;
+                const userObj = systemUsers.find(u => u.name === currentUserName || (u.active !== false && String(u.pin).trim() === loginInputPin));
+                if (!userObj || !userObj.permissions) {
+                    return section === 'dailyReport';
+                }
+                return !!userObj.permissions[section];
+            };
 
             const isAdminPin = (pin) => {
                 if (!pin) return false;
@@ -1160,20 +1216,27 @@
                 }
 
                 let updatedUsers;
+                const permsToSave = userFormRole === 'admin' 
+                    ? { dailyReport: true, staffMaster: true, safety: true, evaluation: true }
+                    : userFormRole === 'viewer'
+                        ? { dailyReport: false, staffMaster: false, safety: false, evaluation: false }
+                        : userFormPerms;
+
                 if (editingUserId) {
-                    updatedUsers = systemUsers.map(u => u.id === editingUserId ? { ...u, name, role: userFormRole, pin } : u);
-                    alert(`✅ تم تحديث بيانات المستخدم (${name}) بنجاح!`);
+                    updatedUsers = systemUsers.map(u => u.id === editingUserId ? { ...u, name, role: userFormRole, pin, permissions: permsToSave } : u);
+                    alert(`✅ تم تحديث بيانات وصلاحيات المستخدم (${name}) بنجاح!`);
                 } else {
                     const newUser = {
                         id: 'usr_' + Date.now(),
                         name,
                         role: userFormRole,
                         pin,
+                        permissions: permsToSave,
                         active: true,
                         createdAt: new Date().toLocaleDateString('ar-IQ')
                     };
                     updatedUsers = [...systemUsers, newUser];
-                    alert(`✅ تم إضافة المستخدم الجديد (${name}) بصلاحية (${userFormRole === 'admin' ? 'مدير نظام' : userFormRole === 'operator' ? 'إداري مُدخل' : 'مستعرض'}) بنجاح!`);
+                    alert(`✅ تم إضافة المستخدم الجديد (${name}) بالصلاحيات المحددة بنجاح!`);
                 }
 
                 setSystemUsers(updatedUsers);
@@ -1198,6 +1261,12 @@
                 setUserFormName('');
                 setUserFormRole('operator');
                 setUserFormPin('');
+                setUserFormPerms({
+                    dailyReport: true,
+                    staffMaster: false,
+                    safety: false,
+                    evaluation: false
+                });
             };
 
             const handleEditUserClick = (u) => {
@@ -1205,6 +1274,12 @@
                 setUserFormName(u.name);
                 setUserFormRole(u.role);
                 setUserFormPin(u.pin);
+                setUserFormPerms(u.permissions || {
+                    dailyReport: true,
+                    staffMaster: u.role === 'admin',
+                    safety: u.role === 'admin',
+                    evaluation: u.role === 'admin'
+                });
             };
 
             const handleCancelUserEdit = () => {
@@ -1212,6 +1287,12 @@
                 setUserFormName('');
                 setUserFormRole('operator');
                 setUserFormPin('');
+                setUserFormPerms({
+                    dailyReport: true,
+                    staffMaster: false,
+                    safety: false,
+                    evaluation: false
+                });
             };
 
             const handleDeleteUser = (userId) => {
@@ -1801,6 +1882,10 @@
             };
 
             const setEmployeeDailyStatusOverride = (empId, dateStr, status) => {
+                if (!canEdit('dailyReport')) {
+                    alert('⛔ عذراً، ليس لديك صلاحية تعديل أو مزامنة الموقف اليومي!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
+                    return;
+                }
                 const emp = staff.find(s => s.id === empId);
 
                 // إلغاء وسحب التعديل فوراً والعودة إلى الافتراضي الأصلي
@@ -1917,6 +2002,10 @@
 
             // تسليط إجراء جماعي لكافة منتسبي موقع / وحدة معينة (تعذر حضور أو استعادة الافتراضي)
             const setUnitBulkStatus = (unitName, statusValue) => {
+                if (!canEdit('dailyReport')) {
+                    alert('⛔ عذراً، ليس لديك صلاحية تعديل أو مزامنة الموقف اليومي!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
+                    return;
+                }
                 const targetStaff = staff.filter(s => s.unit === unitName);
                 if (targetStaff.length === 0) return;
 
@@ -3877,6 +3966,10 @@
             
             const deleteEmployee = () => {
                 if (!editingEmployee) return;
+                if (!canEdit('staffMaster')) {
+                    alert('⛔ عذراً، ليس لديك صلاحية حذف منتسبين من الملاك العام!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
+                    return;
+                }
                 const adminPin = prompt('🔐 يتطلب حذف الموظف إدخال الرمز السري للإداري:');
                 if (!isAdminPin(adminPin)) {
                     alert('❌ الرمز السري غير صحيح! تم إلغاء عملية الحذف للحماية.');
@@ -3918,6 +4011,10 @@
             
             const saveEmployeeEdit = () => {
                 if (!editingEmployee) return;
+                if (!canEdit('staffMaster')) {
+                    alert('⛔ عذراً، ليس لديك صلاحية إضافة أو تعديل بيانات الملاك العام والمنتسبين!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
+                    return;
+                }
                 
                 // التحقق من رقم النقال
                 if (editingEmployee.mobile && editingEmployee.mobile.length > 0) {
@@ -5569,7 +5666,7 @@
                                             onChange={(e) => setUserFormRole(e.target.value)}
                                             className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-black text-slate-800 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition shadow-sm cursor-pointer"
                                         >
-                                            <option value="operator">✍️ إداري مُدخل (تسجيل مواقف وإدارة الموظفين)</option>
+                                            <option value="operator">✍️ إداري مُدخل (صلاحيات مخصصة حسب التبويبات)</option>
                                             <option value="admin">👑 مدير النظام (كامل الصلاحيات والحذف)</option>
                                             <option value="viewer">👁️ مستعرض (عرض وطباعة وبحث فقط)</option>
                                         </select>
@@ -5585,6 +5682,58 @@
                                             className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-black text-indigo-900 text-center outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition shadow-sm"
                                         />
                                     </div>
+
+                                    {/* مربعات اختيار صلاحيات التعديل للتبويبات (Granular Tab Permissions) */}
+                                    {userFormRole === 'operator' && (
+                                        <div className="md:col-span-12 p-3 bg-indigo-50/80 border border-indigo-200 rounded-2xl space-y-2">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                                <span className="text-xs font-black text-indigo-950 flex items-center gap-1.5">
+                                                    <span>🛡️ تحديد صلاحيات التعديل والمزامنة الممنوحة لهذا الإداري:</span>
+                                                </span>
+                                                <span className="text-[10px] text-indigo-700 font-bold bg-white px-2 py-0.5 rounded-lg border border-indigo-200">
+                                                    👁️ الاطلاع والطباعة متاح لكافة التبويبات تلقائياً
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-1">
+                                                <label className={`flex items-center gap-2 p-2 rounded-xl border transition cursor-pointer ${userFormPerms.dailyReport ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={userFormPerms.dailyReport}
+                                                        onChange={(e) => setUserFormPerms({ ...userFormPerms, dailyReport: e.target.checked })}
+                                                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                    />
+                                                    <span className="text-xs font-bold">📅 الموقف اليومي</span>
+                                                </label>
+                                                <label className={`flex items-center gap-2 p-2 rounded-xl border transition cursor-pointer ${userFormPerms.staffMaster ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={userFormPerms.staffMaster}
+                                                        onChange={(e) => setUserFormPerms({ ...userFormPerms, staffMaster: e.target.checked })}
+                                                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                    />
+                                                    <span className="text-xs font-bold">👥 الملاك والمنتسبين</span>
+                                                </label>
+                                                <label className={`flex items-center gap-2 p-2 rounded-xl border transition cursor-pointer ${userFormPerms.safety ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={userFormPerms.safety}
+                                                        onChange={(e) => setUserFormPerms({ ...userFormPerms, safety: e.target.checked })}
+                                                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                    />
+                                                    <span className="text-xs font-bold">🦺 تجهيزات السلامة</span>
+                                                </label>
+                                                <label className={`flex items-center gap-2 p-2 rounded-xl border transition cursor-pointer ${userFormPerms.evaluation ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={userFormPerms.evaluation}
+                                                        onChange={(e) => setUserFormPerms({ ...userFormPerms, evaluation: e.target.checked })}
+                                                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                    />
+                                                    <span className="text-xs font-bold">⭐ التقييم السنوي</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="md:col-span-12 flex justify-end gap-2 pt-2">
                                         {editingUserId && (
@@ -5643,9 +5792,20 @@
                                             <tbody className="divide-y divide-slate-100">
                                                 {systemUsers.map((u, idx) => {
                                                     const isActive = u.active !== false;
-                                                    let roleBadge = <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200">✍️ إداري مُدخل</span>;
+                                                    const perms = u.permissions || {};
+                                                    let roleBadge = (
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200">✍️ إداري مُدخل</span>
+                                                            <div className="flex flex-wrap items-center justify-center gap-0.5 max-w-[140px]">
+                                                                {perms.dailyReport && <span className="text-[8px] bg-indigo-50 text-indigo-700 px-1 py-0.2 rounded border border-indigo-100 font-bold">📅 موقف</span>}
+                                                                {perms.staffMaster && <span className="text-[8px] bg-emerald-50 text-emerald-700 px-1 py-0.2 rounded border border-emerald-100 font-bold">👥 ملاك</span>}
+                                                                {perms.safety && <span className="text-[8px] bg-amber-50 text-amber-800 px-1 py-0.2 rounded border border-amber-100 font-bold">🦺 سلامة</span>}
+                                                                {perms.evaluation && <span className="text-[8px] bg-purple-50 text-purple-700 px-1 py-0.2 rounded border border-purple-100 font-bold">⭐ تقييم</span>}
+                                                            </div>
+                                                        </div>
+                                                    );
                                                     if (u.role === 'admin') roleBadge = <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-900 border border-amber-300">👑 مدير النظام</span>;
-                                                    else if (u.role === 'viewer') roleBadge = <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 border border-slate-200">👁️ مستعرض</span>;
+                                                    else if (u.role === 'viewer') roleBadge = <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 border border-slate-200">👁️ مستعرض (اطلاع فقط)</span>;
 
                                                     const userSess = activeSessions && activeSessions[u.id];
                                                     const isOnline = userSess && userSess.lastSeen && (Date.now() - userSess.lastSeen < 15000);
@@ -7818,6 +7978,10 @@
                                                 </div>
                                                 <button
                                                     onClick={() => {
+                                                        if (!canEdit('safety')) {
+                                                            alert('⛔ عذراً، ليس لديك صلاحية تعديل بيانات وتجهيزات السلامة المهنية!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
+                                                            return;
+                                                        }
                                                         if (selectedSafetyIds.length === 0) {
                                                             alert('⚠️ يرجى تحديد موظف واحد على الأقل من الجدول أولاً!');
                                                             return;
@@ -9339,15 +9503,23 @@
                                     </div>
                                 </div>
                                 
-                                <div className="preview-footer">
+                                <div className="preview-footer flex items-center justify-between gap-3">
                                     <button onClick={cancelEdit}
-                                        className="px-8 py-4 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-bold text-lg transition shadow-lg">
-                                        ✕ إلغاء
+                                        className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-bold text-sm transition shadow-md cursor-pointer">
+                                        ✕ إغلاق
                                     </button>
-<button onClick={saveEmployeeEdit}
-                                        className="px-12 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-bold text-lg shadow-xl transition">
-                                        ✅ حفظ التعديلات
-                                    </button>
+                                    {canEdit('staffMaster') ? (
+                                        <button onClick={saveEmployeeEdit}
+                                            className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold text-sm shadow-xl transition cursor-pointer flex items-center gap-2">
+                                            <span>✅</span>
+                                            <span>حفظ التعديلات</span>
+                                        </button>
+                                    ) : (
+                                        <div className="text-xs text-amber-800 bg-amber-50 px-4 py-2.5 rounded-xl border border-amber-300 font-bold flex items-center gap-1.5 shadow-sm">
+                                            <span>👁️</span>
+                                            <span>وضع الاطلاع والطباعة فقط (تعديل بيانات الملاك مخصص لمدير النظام أو المخولين)</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
