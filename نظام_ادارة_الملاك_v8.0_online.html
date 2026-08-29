@@ -936,6 +936,7 @@
                 }
             }, [pendingDeletionRequest]);
 
+            const FIREBASE_DB_URL = "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle.json";
             const FIREBASE_SESSIONS_URL = "https://hr-cooling-default-rtdb.firebaseio.com/active_sessions";
             const currentSessionIdRef = React.useRef(null);
             const currentUserIdRef = React.useRef(null);
@@ -954,11 +955,33 @@
 
                 setIsCheckingLogin(true);
 
-                // 1. تحديد المستخدم المستهدف
-                let targetUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === inputPin);
+                // جلب أحدث قائمة مستخدمين مباشرة من السحابة لضمان الدقة وتفادي أي كاش محلي
+                let currentUsers = systemUsers;
+                try {
+                    const freshRes = await fetch(FIREBASE_DB_URL + '?t=' + Date.now(), {
+                        method: 'GET',
+                        headers: { 'Cache-Control': 'no-cache' }
+                    });
+                    if (freshRes.ok) {
+                        const freshBundle = await freshRes.json();
+                        if (freshBundle && freshBundle.systemUsersList && Array.isArray(freshBundle.systemUsersList) && freshBundle.systemUsersList.length > 0) {
+                            currentUsers = freshBundle.systemUsersList;
+                            setSystemUsers(freshBundle.systemUsersList);
+                            safeStorage.setItem('systemUsersList', JSON.stringify(freshBundle.systemUsersList));
+                            if (freshBundle.staffData) {
+                                applyDataBundleToState(freshBundle);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Live user fetch error during login:", err);
+                }
+
+                // 1. تحديد المستخدم المستهدف من القائمة السحابية الحية
+                let targetUser = currentUsers.find(u => u.active !== false && String(u.pin).trim() === inputPin);
                 if (!targetUser) {
                     if (inputPin === '1975') {
-                        targetUser = systemUsers.find(u => u.role === 'admin') || { id: 'usr_1', name: 'أسامة خليل (مدير النظام)', role: 'admin' };
+                        targetUser = currentUsers.find(u => u.role === 'admin') || { id: 'usr_1', name: 'أسامة خليل (مدير النظام)', role: 'admin' };
                     } else if (inputPin === '' || inputPin === '1234') {
                         targetUser = { id: 'usr_viewer', name: 'مستعرض عام', role: 'viewer' };
                     }
@@ -1260,7 +1283,6 @@
                 isSyncing: false
             });
                                     // ===== محرك المزامنة السحابية الحية الرسمي (Google Firebase Realtime DB) =====
-            const FIREBASE_DB_URL = "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle.json";
             const [cloudSyncStatus, setCloudSyncStatus] = useState({ connected: true, syncing: false, lastSync: null });
             const lastCloudTimeRef = React.useRef(null);
             const isInitialCloudLoadCompleteRef = React.useRef(false);
