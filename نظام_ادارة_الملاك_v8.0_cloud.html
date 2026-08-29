@@ -1370,6 +1370,11 @@
 
             // جلب البيانات السحابية الحية فورياً وتحديث كافة الأجهزة
             const fetchCloudData = async () => {
+                if (window.location.protocol === 'file:' || !FIREBASE_DB_URL) {
+                    setCloudSyncStatus({ connected: false, syncing: false, lastSync: 'أوفلاين محلي مستقل' });
+                    isInitialCloudLoadCompleteRef.current = true;
+                    return;
+                }
                 try {
                     setCloudSyncStatus(prev => ({ ...prev, syncing: true }));
                     const res = await fetch(FIREBASE_DB_URL + '?t=' + Date.now(), {
@@ -1404,7 +1409,11 @@
 
             // بث التعديلات مباشرة إلى السحابة الحية لتنعكس لدى الجميع في نفس اللحظة
             const pushDataToCloud = async (bundle = null) => {
-                // منع رفع الكاش المحلي القديم إلى السحابة قبل إتمام الجلب الأولي للبيانات السحابية
+                // 1. حظر تام وقاطع لأي مزامنة سحابية إذا كان الملف يعمل كـ أوفلاين محلي (file://) أو تم إلغاء رابط السحابة
+                if (window.location.protocol === 'file:' || !FIREBASE_DB_URL) {
+                    return;
+                }
+                // 2. منع رفع الكاش المحلي القديم إلى السحابة قبل إتمام الجلب الأولي للبيانات السحابية
                 if (!isInitialCloudLoadCompleteRef.current && !bundle) {
                     return;
                 }
@@ -1539,9 +1548,12 @@
                     setOvertimeHoursRecords(bundle.overtimeHoursRecords);
                     safeStorage.setItem('overtimeHoursRecords', JSON.stringify(bundle.overtimeHoursRecords));
                 }
-                if (bundle.dailyStatusOverrides) {
-                    setDailyStatusOverrides(bundle.dailyStatusOverrides);
-                    safeStorage.setItem('dailyStatusOverrides', JSON.stringify(bundle.dailyStatusOverrides));
+                if (bundle.dailyStatusOverrides && typeof bundle.dailyStatusOverrides === 'object') {
+                    setDailyStatusOverrides(prev => {
+                        const merged = { ...(prev || {}), ...bundle.dailyStatusOverrides };
+                        safeStorage.setItem('dailyStatusOverrides', JSON.stringify(merged));
+                        return merged;
+                    });
                 }
                 if (bundle.shiftAnchorDate) {
                     setAnchorDate(bundle.shiftAnchorDate);

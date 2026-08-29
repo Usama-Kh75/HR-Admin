@@ -24,6 +24,11 @@ with open('e:/Antigravity projects/HR Admin/نظام_ادارة_الملاك_v8.
 
 # 4. Generate نظام_ادارة_الملاك_v8.0_offline.html (Pure Offline Standalone)
 offline_code = v8_master_code.replace("<title>نظام إدارة الملاك - الإصدار v8.0 Cloud Edition ☁️</title>", "<title>نظام إدارة الملاك - الإصدار v8.0 Standalone (أوفلاين محلي) 💾</title>")
+
+# Completely neutralize Firebase endpoints in the offline build
+offline_code = offline_code.replace('const FIREBASE_DB_URL = "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle.json";', 'const FIREBASE_DB_URL = "";')
+offline_code = offline_code.replace('const FIREBASE_SESSIONS_URL = "https://hr-cooling-default-rtdb.firebaseio.com/active_sessions";', 'const FIREBASE_SESSIONS_URL = "";')
+
 # Update badge for offline edition to display offline storage
 offline_badge_old = '{cloudSyncStatus && cloudSyncStatus.connected ? ('
 offline_badge_new = '{false ? ('
