@@ -1924,7 +1924,13 @@
             const getEmployeeDailyStatus = (emp, dateStr) => {
                 // 1. التعديلات الاستثنائية المباشرة للموظف
                 if (dailyStatusOverrides[dateStr] && dailyStatusOverrides[dateStr][emp.id]) {
-                    return dailyStatusOverrides[dateStr][emp.id];
+                    const ov = dailyStatusOverrides[dateStr][emp.id];
+                    // تعذر الحضور يشمل موظفي الصباحي فقط ولا يشمل المناوبين نهائياً
+                    if (emp.workType === 'مناوب' && (ov === 'تعذر حضور' || (typeof ov === 'string' && ov.includes('تعذر')))) {
+                        // لا ينطبق على المناوب إطلاقاً، يستمر لاحتساب وجبة المناوبة الطبيعية
+                    } else {
+                        return ov;
+                    }
                 }
                 if (emp.status && emp.status !== 'نشط') {
                     return emp.status;
@@ -2138,7 +2144,7 @@
                 }, 50);
             };
 
-            // تسليط إجراء جماعي لكافة منتسبي موقع / وحدة معينة (تعذر حضور أو استعادة الافتراضي)
+            // تسليط إجراء جماعي لمنتسبي موقع / وحدة معينة (تعذر حضور للصباحي فقط، أو استعادة الافتراضي)
             const setUnitBulkStatus = (unitName, statusValue) => {
                 if (!canEdit('dailyReport')) {
                     alert('⛔ عذراً، ليس لديك صلاحية تعديل أو مزامنة الموقف اليومي!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
@@ -2148,9 +2154,20 @@
                 if (targetStaff.length === 0) return;
 
                 const isDefault = !statusValue || statusValue === 'default';
-                const actionLabel = isDefault ? 'استعادة الموقف الافتراضي' : `تسليط حالة (${statusValue})`;
+                const isExcuse = statusValue === 'تعذر حضور' || (statusValue && statusValue.includes('تعذر'));
+                
+                // تعذر الحضور يشمل الصباحي فقط ولا يشمل المناوبين
+                const morningStaffInUnit = targetStaff.filter(s => s.workType === 'صباحي');
+                if (isExcuse && morningStaffInUnit.length === 0) {
+                    alert(`ℹ️ وحدة (${unitName}) لا تحتوي على موظفين صباحيين لتسليط تعذر الحضور عليهم.\nالمناوبون يتبعون جدول وجباتهم ولا يشملهم تعذر الحضور.`);
+                    return;
+                }
 
-                if (!confirm(`هل أنت متأكد من ${actionLabel} لجميع منتسبي (${unitName}) البالغ عددهم ${targetStaff.length} موظفاً لتاريخ [${dailyReportDate}]؟`)) {
+                const actionLabel = isDefault 
+                    ? `استعادة الموقف الطبيعي لجميع منتسبي (${unitName})` 
+                    : `تسليط تعذر حضور لموظفي الصباحي فقط في (${unitName}) (عددهم ${morningStaffInUnit.length} موظف)`;
+
+                if (!confirm(`هل أنت متأكد من ${actionLabel} لتاريخ [${dailyReportDate}]؟`)) {
                     return;
                 }
 
@@ -2162,8 +2179,15 @@
                     targetStaff.forEach(emp => {
                         if (isDefault) {
                             delete dateOverrides[emp.id];
-                        } else {
-                            dateOverrides[emp.id] = statusValue;
+                        } else if (isExcuse) {
+                            if (emp.workType === 'صباحي') {
+                                dateOverrides[emp.id] = statusValue;
+                            } else {
+                                // المناوب لا يشمله تعذر الحضور نهائياً ويُحذف أي تعذر مسلط عليه سابقاً
+                                if (dateOverrides[emp.id] && (dateOverrides[emp.id] === 'تعذر حضور' || dateOverrides[emp.id].includes('تعذر'))) {
+                                    delete dateOverrides[emp.id];
+                                }
+                            }
                         }
                     });
 
@@ -2176,7 +2200,7 @@
                     return next;
                 });
 
-                showCustomAlert(`✅ تم بنجاح ${actionLabel} لجميع منتسبي (${unitName}) (${targetStaff.length} موظف)`, 'success');
+                showCustomAlert(`✅ تم بنجاح ${actionLabel}`, 'success');
 
                 setTimeout(() => {
                     pushDataToCloud({
@@ -7379,10 +7403,10 @@
                                                                     type="button"
                                                                     onClick={() => setUnitBulkStatus(unitName, 'تعذر حضور')}
                                                                     className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-xl text-xs font-black transition flex items-center gap-1 cursor-pointer active:scale-95 shadow-sm"
-                                                                    title={`تسليط تعذر حضور لكافة منتسبي (${unitName}) لهذا اليوم بضغطة واحدة`}
+                                                                    title={`تسليط تعذر حضور لموظفي الصباحي فقط في (${unitName}) لهذا اليوم بضغطة واحدة`}
                                                                 >
                                                                     <span>🚧</span>
-                                                                    <span>تسليط تعذر حضور للموقع</span>
+                                                                    <span>تسليط تعذر حضور (للصباحي)</span>
                                                                 </button>
                                                                 <button
                                                                     type="button"
