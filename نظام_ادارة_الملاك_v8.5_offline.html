@@ -953,6 +953,7 @@
                 evaluation: false
             });
             const [showUserPins, setShowUserPins] = useState(false);
+            const [revealedPinUsers, setRevealedPinUsers] = useState({});
 
             // دالة التحقق من صلاحية التعديل والمزامنة لتبويب معين (Can Edit & Sync Guard)
             const canEdit = (section) => {
@@ -1288,6 +1289,18 @@
                     safety: u.role === 'admin',
                     evaluation: u.role === 'admin'
                 });
+                // تمرير الشاشة فورياً وسلساً للأعلى إلى حقول التعديل والتركيز عليها تلقائياً
+                setTimeout(() => {
+                    const scrollContainer = document.getElementById('userModalScrollBody');
+                    if (scrollContainer) {
+                        scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                    const pinInput = document.getElementById('userFormPinInput');
+                    if (pinInput) {
+                        pinInput.focus();
+                        pinInput.select();
+                    }
+                }, 40);
             };
 
             const handleCancelUserEdit = () => {
@@ -5804,20 +5817,34 @@
                             </button>
                         </div>
 
-                        <div className="p-5 md:p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                        <div id="userModalScrollBody" className="p-5 md:p-6 space-y-6 max-h-[80vh] overflow-y-auto scroll-smooth">
                             {/* نموذج إضافة / تعديل مستخدم */}
-                            <form onSubmit={handleSaveUser} className={`p-4 md:p-5 rounded-2xl border transition-all ${editingUserId ? 'bg-amber-50/80 border-amber-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}>
+                            <form 
+                                id="userEditFormSection" 
+                                onSubmit={handleSaveUser} 
+                                className={`p-4 md:p-5 rounded-2xl border transition-all duration-300 ${
+                                    editingUserId 
+                                        ? 'bg-gradient-to-br from-amber-50 to-orange-50/70 border-amber-400 shadow-md ring-2 ring-amber-400/50' 
+                                        : 'bg-slate-50 border-slate-200'
+                                }`}
+                            >
                                 <div className="flex items-center justify-between mb-3 border-b border-slate-200/80 pb-2">
                                     <span className="text-xs md:text-sm font-black text-slate-800 flex items-center gap-1.5">
-                                        <span>{editingUserId ? '✏️ تعديل بيانات المستخدم الحالي:' : '➕ إضافة مستخدم جديد للنظام:'}</span>
+                                        <span>{editingUserId ? '✏️ تعديل بيانات وكلمة مرور المستخدم المحدد:' : '➕ إضافة مستخدم جديد للنظام:'}</span>
+                                        {editingUserId && (
+                                            <span className="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">
+                                                وضع التعديل النشط ⚡
+                                            </span>
+                                        )}
                                     </span>
                                     {editingUserId && (
                                         <button
                                             type="button"
                                             onClick={handleCancelUserEdit}
-                                            className="text-xs font-bold text-slate-500 hover:text-red-600 underline cursor-pointer"
+                                            className="text-xs font-bold text-slate-500 hover:text-red-600 underline cursor-pointer flex items-center gap-1"
                                         >
-                                            إلغاء وضع التعديل
+                                            <span>✕</span>
+                                            <span>إلغاء وضع التعديل</span>
                                         </button>
                                     )}
                                 </div>
@@ -5850,11 +5877,12 @@
                                     <div className="md:col-span-3 space-y-1">
                                         <label className="block text-[11px] font-black text-slate-700">🔑 كلمة المرور (PIN):</label>
                                         <input
+                                            id="userFormPinInput"
                                             type="text"
                                             value={userFormPin}
                                             onChange={(e) => setUserFormPin(e.target.value)}
                                             placeholder="رمز الدخول..."
-                                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-black text-indigo-900 text-center outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition shadow-sm"
+                                            className="w-full bg-white border border-amber-400 focus:border-indigo-600 rounded-xl px-3 py-2 text-xs font-mono font-black text-indigo-900 text-center outline-none focus:ring-2 focus:ring-indigo-500 transition shadow-sm"
                                         />
                                     </div>
 
@@ -5985,20 +6013,53 @@
                                                     const userSess = activeSessions && activeSessions[u.id];
                                                     const isOnline = userSess && userSess.lastSeen && (Date.now() - userSess.lastSeen < 15000);
 
+                                                    const isCurrentlyEditing = editingUserId === u.id;
+                                                    const isPinRevealed = showUserPins || !!revealedPinUsers[u.id];
+
                                                     return (
-                                                        <tr key={u.id} className={`hover:bg-slate-50/80 transition ${!isActive ? 'opacity-50 bg-slate-50' : ''}`}>
+                                                        <tr 
+                                                            key={u.id} 
+                                                            className={`transition-all ${
+                                                                isCurrentlyEditing 
+                                                                    ? 'bg-amber-100/80 ring-2 ring-amber-400 border-amber-300 font-black' 
+                                                                    : (isActive ? 'hover:bg-slate-50/80' : 'opacity-50 bg-slate-50')
+                                                            }`}
+                                                        >
                                                             <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
                                                             <td className="p-3 font-black text-slate-900">
                                                                 <div className="flex items-center gap-1.5">
                                                                     <span>{u.name}</span>
                                                                     {u.id === 'usr_1' && <span className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded border border-indigo-100 font-bold">الماستر</span>}
+                                                                    {isCurrentlyEditing && (
+                                                                        <span className="text-[10px] bg-amber-500 text-white px-1.5 py-0.2 rounded-full font-bold">
+                                                                            ✏️ قيد التعديل
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             </td>
                                                             <td className="p-3 text-center">{roleBadge}</td>
                                                             <td className="p-3 text-center font-mono font-black text-slate-700">
-                                                                <span className="bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 inline-block text-xs">
-                                                                    {showUserPins ? u.pin : '••••'}
-                                                                </span>
+                                                                <div className="flex items-center justify-center gap-1">
+                                                                    <span className={`px-2.5 py-1 rounded-lg border font-mono inline-block text-xs font-black transition ${
+                                                                        isPinRevealed 
+                                                                            ? 'bg-amber-100 text-amber-950 border-amber-300 shadow-sm ring-1 ring-amber-400' 
+                                                                            : 'bg-slate-100 text-slate-700 border-slate-200'
+                                                                    }`}>
+                                                                        {isPinRevealed ? u.pin : '••••'}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setRevealedPinUsers(prev => ({ ...prev, [u.id]: !prev[u.id] }))}
+                                                                        className={`p-1 rounded-lg transition cursor-pointer text-xs ${
+                                                                            revealedPinUsers[u.id] 
+                                                                                ? 'bg-amber-200 text-amber-900 font-bold' 
+                                                                                : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100'
+                                                                        }`}
+                                                                        title={revealedPinUsers[u.id] ? "إخفاء كلمة المرور لهذا المستخدم" : "إظهار كلمة المرور لهذا المستخدم مباشرة هنا"}
+                                                                    >
+                                                                        {revealedPinUsers[u.id] ? '🙈' : '👁️'}
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                             <td className="p-3 text-center">
                                                                 <button
@@ -6041,10 +6102,15 @@
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => handleEditUserClick(u)}
-                                                                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
-                                                                        title="تعديل المستخدم"
+                                                                        className={`p-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 text-xs font-bold ${
+                                                                            isCurrentlyEditing 
+                                                                                ? 'bg-amber-500 text-white shadow-sm' 
+                                                                                : 'text-blue-600 hover:bg-blue-50'
+                                                                        }`}
+                                                                        title="تعديل المستخدم (تمرير تلقائي فوري للأعلى)"
                                                                     >
-                                                                        ✏️
+                                                                        <span>✏️</span>
+                                                                        <span>تعديل</span>
                                                                     </button>
                                                                     <button
                                                                         type="button"
