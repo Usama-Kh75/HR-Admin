@@ -28,7 +28,7 @@
   "rules": {
     "system_bundle": {
       ".read": true,
-      ".write": "auth != null && root.child('roles').child(auth.uid).exists()"
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists() && root.child('roles').child(auth.uid).child('role').val() !== 'viewer'"
     },
     "active_sessions": {
       ".read": true,
@@ -36,7 +36,7 @@
     },
     "backups_history": {
       ".read": "auth != null && root.child('roles').child(auth.uid).child('role').val() === 'admin'",
-      ".write": "auth != null && root.child('roles').child(auth.uid).exists()"
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists() && root.child('roles').child(auth.uid).child('role').val() !== 'viewer'"
     },
     "roles": {
       ".read": "auth != null",
@@ -51,6 +51,7 @@
 }
 ```
 
+- **تصحيح ثالث (2026-09-02):** الشرط `exists()` وحده يمنح **كل** صاحب سجل في `roles` صلاحية الكتابة — بما فيهم دور `viewer`، الذي يُمنع من التعديل في الواجهة فقط بينما يقبله الخادم. هذا مقبول للمشغّلين الموثوقين، لكنه يُفرغ حساب الاطلاع من معناه: صاحبه يستطيع الكتابة مباشرة بتوكنه من DevTools. لذا يستثني شرط الكتابة على `system_bundle` و`backups_history` دور `viewer` صراحةً. تبقى كتابة `audit_log` و`active_sessions` مسموحة له ليُسجَّل دخوله.
 - **تصحيح ثانٍ (2026-09-02):** كانت `roles` بحالة `.write: false` بينما نافذة إدارة الحسابات (البند 3.2) تكتب عليها — تناقض داخل الوثيقة نفسها كان ينتج فشلاً صامتاً: تظهر رسالة نجاح بينما الدور لا يصل إلى Firebase. الكتابة صارت مسموحة **للمدير وحده** (يتحقق منها الخادم من `roles/{uid}/role`)، وهذا لا يوسّع صلاحيات المدير إذ يملكها أصلاً، بينما تبقى الكتابة ممنوعة على غيره فلا يستطيع أحد منح نفسه دوراً.
 - **تصحيح جوهري (2026-09-02):** الشرط ليس `auth != null` بل وجود سجل في `roles` أيضاً. السبب: تفعيل Email/Password يفتح مسار `accounts:signUp` العلني، فأي زائر يملك مفتاح الويب (وهو معرّف عام ظاهر في الكود) يستطيع إنشاء حساب لنفسه عبر `curl` دون المرور بأي واجهة. ادّعاء هذه الوثيقة بأن «غياب واجهة التسجيل الذاتي يمنع ذلك» كان خاطئاً. اشتراط وجود سجل في `roles` — وهي عقدة `.write: false` لا يستطيع التطبيق الكتابة عليها — يغلق هذا المسار نهائياً.
 - عقدة `roles/{uid}` تُدار **يدوياً فقط** من لوحة تحكم Firebase أو عبر Firebase Console Rules Playground (لا واجهة كتابة لها من التطبيق) — بديل نظام `systemUsers[].pin`.

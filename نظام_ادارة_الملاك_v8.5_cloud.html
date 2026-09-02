@@ -1156,7 +1156,9 @@
                 const targetUser = { id: session.uid, name: roleData.name || email, role: roleData.role, permissions: roleData.permissions || {} };
 
                 // فحص هل الحساب مستخدم حالياً من جهاز آخر (قفل الجلسة الفردية)
-                try {
+                // لا يُطبَّق على حسابات الاطلاع: لا تكتب شيئاً، ويجوز استعمالها من عدة أجهزة معاً
+                const enforcesSessionLock = targetUser.role !== 'viewer';
+                if (enforcesSessionLock) try {
                     const sessRes = await fetch(`${FIREBASE_SESSIONS_URL}/${targetUser.id}.json?t=${Date.now()}`);
                     if (sessRes.ok) {
                         const sessData = await sessRes.json();
@@ -1181,7 +1183,7 @@
                 currentSessionIdRef.current = newSessionId;
                 currentUserIdRef.current = targetUser.id;
 
-                try {
+                if (enforcesSessionLock) try {
                     await cloudFetch(`${FIREBASE_SESSIONS_URL}/${targetUser.id}.json`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
