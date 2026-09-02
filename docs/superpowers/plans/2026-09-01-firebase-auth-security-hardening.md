@@ -30,12 +30,12 @@ There is no test runner in this repository. Wherever the task-template below say
 **Interfaces:**
 - Produces: `FIREBASE_WEB_API_KEY` (const, placeholder string), `FIREBASE_ROLES_URL`, `FIREBASE_AUDIT_LOG_URL` (consts), `getStoredAuth()`, `setStoredAuth(session|null)`, `signInWithEmail(email, password)` (returns `{idToken, refreshToken, uid, expiresAt}`, throws on failure), `refreshIdTokenIfNeeded()` (returns session or `null`), `signOutFirebase()`, `cloudFetch(url, options)` (returns a `fetch` Promise with `auth=<idToken>` appended when a session exists), `logAuditEvent(action)`.
 
-- [ ] **Step 1: Confirm current state**
+- [x] **Step 1: Confirm current state**
 
 Run: `grep -n "FIREBASE_SESSIONS_URL = " "index.html"`
 Expected output: one line, `const FIREBASE_SESSIONS_URL = "https://hr-cooling-default-rtdb.firebaseio.com/active_sessions";` — this is the anchor line for the next edit.
 
-- [ ] **Step 2: Add the new constants and helper functions**
+- [x] **Step 2: Add the new constants and helper functions**
 
 Insert immediately after the `FIREBASE_SESSIONS_URL` line (index.html:1022):
 
@@ -141,11 +141,11 @@ Insert immediately after the `FIREBASE_SESSIONS_URL` line (index.html:1022):
             };
 ```
 
-- [ ] **Step 3: Verify it loads without errors**
+- [x] **Step 3: Verify it loads without errors**
 
 Open `index.html` directly in a browser (double-click or `start index.html` on Windows). Open DevTools Console. Confirm there are no red syntax errors on load (the app should render the normal welcome/login screen). This confirms the new code parses correctly under Babel's in-browser JSX/JS transform.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add index.html
@@ -163,12 +163,12 @@ git commit -m "Add Firebase Auth REST helpers (signIn, token refresh, cloudFetch
 - Consumes: `signInWithEmail`, `cloudFetch`, `FIREBASE_ROLES_URL` from Task 1.
 - Produces: `loginEmail`/`setLoginEmail`, `loginPassword`/`setLoginPassword` state (replacing `loginInputPin`); `handleLogin` now authenticates via Firebase and reads the user's role from `roles/{uid}`.
 
-- [ ] **Step 1: Confirm current state**
+- [x] **Step 1: Confirm current state**
 
 Run: `grep -n "loginInputPin" "index.html"`
 Expected: matches at the state declaration (~1036), inside `handleLogin` (~1042, 1070), and in the JSX input (~5791). These are all the sites this task touches.
 
-- [ ] **Step 2: Replace login state**
+- [x] **Step 2: Replace login state**
 
 Find (index.html:1036-1037):
 ```js
@@ -182,7 +182,7 @@ Replace with:
             const [loginError, setLoginError] = useState('');
 ```
 
-- [ ] **Step 3: Rewrite `handleLogin`**
+- [x] **Step 3: Rewrite `handleLogin`**
 
 Replace the entire `handleLogin` function body (index.html:1039-1136) with:
 
@@ -302,7 +302,7 @@ Replace with:
             const [currentUserPermissions, setCurrentUserPermissions] = useState({});
 ```
 
-- [ ] **Step 4: Update the heartbeat effect to use `cloudFetch` for writes**
+- [x] **Step 4: Update the heartbeat effect to use `cloudFetch` for writes**
 
 Find (index.html, inside the heartbeat `useEffect`, originally ~1168):
 ```js
@@ -320,7 +320,7 @@ Find (index.html, inside the heartbeat `useEffect`, originally ~1168):
 ```
 Replace `await fetch(` with `await cloudFetch(` (same arguments) — the read call one line above it (`checkRes = await fetch(...)`) stays a plain `fetch` since reads remain open.
 
-- [ ] **Step 5: Update the login modal JSX**
+- [x] **Step 5: Update the login modal JSX**
 
 Replace the password input block (index.html:5785-5795):
 ```jsx
@@ -361,11 +361,11 @@ with:
                             </div>
 ```
 
-- [ ] **Step 6: Verify the login form renders**
+- [x] **Step 6: Verify the login form renders**
 
 Open `index.html` in a browser, click through to the login modal. Confirm it shows email + password fields (not the old single PIN field) and that typing and submitting with a bogus email/password shows the `❌` error message without a JS console error.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add index.html
@@ -383,12 +383,12 @@ git commit -m "Replace PIN login with Firebase email/password authentication"
 - Consumes: `currentUserRole`, `currentUserPermissions` (from Task 2).
 - Produces: `isAdminPin` and all literal `'1975'` checks removed; admin-only actions now gate on `currentUserRole === 'admin'` directly (the user is already authenticated by Firebase at this point, so no secondary PIN re-entry is needed).
 
-- [ ] **Step 1: Find every remaining site**
+- [x] **Step 1: Find every remaining site**
 
 Run: `grep -n "isAdminPin\|'1975'" "index.html"`
 This must be the authoritative list for this task — line numbers below are illustrative, not to be trusted after Tasks 1-2 shift the file.
 
-- [ ] **Step 2: Remove the `isAdminPin` definition**
+- [x] **Step 2: Remove the `isAdminPin` definition**
 
 Delete this block entirely (originally index.html:977-982):
 ```js
@@ -399,7 +399,7 @@ Delete this block entirely (originally index.html:977-982):
             };
 ```
 
-- [ ] **Step 3: Simplify `handleOpenUserManagement`**
+- [x] **Step 3: Simplify `handleOpenUserManagement`**
 
 Find (originally index.html:988-1002-ish, the function guarding the user-management modal):
 ```js
@@ -431,7 +431,7 @@ Replace with:
 ```
 This is safe because the user's role now comes from the server-verified `roles/{uid}` node set at login (Task 2) — there is no longer a client-editable PIN to re-check, so a second local prompt would only be theater.
 
-- [ ] **Step 4: Replace every other `isAdminPin(adminPin)` guard**
+- [x] **Step 4: Replace every other `isAdminPin(adminPin)` guard**
 
 For each remaining call site found in Step 1 (originally ~1582, ~4207, ~4413, ~8749), these guard a destructive/admin action behind a `prompt()`-collected `adminPin` variable. Replace the pattern:
 ```js
@@ -443,16 +443,16 @@ with:
 ```
 and remove the now-unused `const adminPin = prompt(...)` line directly above each of those `if` statements (search one line up from each match — the prompt text is no longer needed since the check no longer consumes its value).
 
-- [ ] **Step 5: Verify no references remain**
+- [x] **Step 5: Verify no references remain**
 
 Run: `grep -n "isAdminPin\|'1975'" "index.html"`
 Expected: no output (0 matches).
 
-- [ ] **Step 6: Manual smoke test**
+- [x] **Step 6: Manual smoke test**
 
 Open `index.html` in a browser. Confirm the app still loads and the login modal still opens/closes without a console error (full login can't be tested yet — Firebase console setup and Task 6 are still pending).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add index.html
@@ -470,12 +470,12 @@ git commit -m "Remove hardcoded admin PIN and PIN-based admin re-checks"
 - Consumes: `cloudFetch`, `logAuditEvent` (Task 1).
 - Produces: no new interfaces — closes the last write call sites that were still using plain `fetch`.
 
-- [ ] **Step 1: Confirm remaining plain-`fetch` writes**
+- [x] **Step 1: Confirm remaining plain-`fetch` writes**
 
 Run: `grep -n "fetch(FIREBASE_DB_URL\|fetch(\`\${FIREBASE_BACKUPS_URL}" "index.html"`
 Expected: the `PUT` to `FIREBASE_DB_URL` inside `pushDataToCloud`, and the `PUT` to `FIREBASE_BACKUPS_URL/${todayKey}.json` inside the same function (GET calls to these URLs elsewhere are reads and stay as plain `fetch`).
 
-- [ ] **Step 2: Switch both writes to `cloudFetch`**
+- [x] **Step 2: Switch both writes to `cloudFetch`**
 
 In `pushDataToCloud` (index.html:1486 and 1506 in the original numbering), change:
 ```js
@@ -494,23 +494,23 @@ to:
                         cloudFetch(`${FIREBASE_BACKUPS_URL}/${todayKey}.json`, {
 ```
 
-- [ ] **Step 3: Log an audit event on every successful save**
+- [x] **Step 3: Log an audit event on every successful save**
 
 Immediately after the line `setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });` inside `pushDataToCloud`, add:
 ```js
                         logAuditEvent('save_system_bundle', currentUserName);
 ```
 
-- [ ] **Step 4: Verify no plain-`fetch` writes remain to protected paths**
+- [x] **Step 4: Verify no plain-`fetch` writes remain to protected paths**
 
 Run: `grep -n "fetch(FIREBASE_DB_URL, {\|fetch(\`\${FIREBASE_BACKUPS_URL}" "index.html"`
 Expected: 0 matches for the write forms (the read forms — with `?t=` and no `method:`, or explicit `method: 'GET'` — are unaffected and should still be plain `fetch`).
 
-- [ ] **Step 5: Manual verification**
+- [x] **Step 5: Manual verification**
 
 Open `index.html`, open DevTools → Network tab, trigger any save action (e.g. change the daily report date). Confirm the outgoing request URL to `system_bundle.json` now includes `?auth=...` (it will be the literal string `undefined` until Firebase is fully configured in Task 6 — that's expected at this point; the goal here is confirming the query param is present, not that it's a valid token yet).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add index.html
@@ -528,12 +528,12 @@ git commit -m "Route remaining Firebase writes through cloudFetch and add save a
 - Consumes: `FIREBASE_ROLES_URL`, `cloudFetch` (Task 1).
 - Produces: the modal now edits `{name, role, permissions}` for a Firebase Auth `uid` the admin pastes in (copied from Firebase Console per the deployment steps), instead of generating a `pin`.
 
-- [ ] **Step 1: Locate the current handlers**
+- [x] **Step 1: Locate the current handlers**
 
 Run: `grep -n "existingWithPin\|newUser = {\|updatedUsers = systemUsers.map" "index.html"`
 This finds the add/edit-user save handler that currently validates and stores a `pin` field.
 
-- [ ] **Step 2: Remove PIN validation and generation from the save handler**
+- [x] **Step 2: Remove PIN validation and generation from the save handler**
 
 Find the block that checks for PIN collisions:
 ```js
@@ -541,7 +541,7 @@ Find the block that checks for PIN collisions:
 ```
 and the surrounding logic that builds `newUser`/`updatedUsers` with a `pin` field. Replace the user object shape so it no longer includes `pin`, and instead requires a `uid` field (text input, admin pastes the Firebase Auth UID from the console) plus `name`, `role`, `permissions` — the same shape already used elsewhere in the file for `permissions` (`{ dailyReport, staffMaster, safety, evaluation }`).
 
-- [ ] **Step 3: Write role changes to `roles/{uid}` in Firebase, not just local state**
+- [x] **Step 3: Write role changes to `roles/{uid}` in Firebase, not just local state**
 
 After `updatedUsers` is computed and saved to `safeStorage`/`systemUsers` state (existing behavior), add a call so the change actually takes effect for that person's next login:
 ```js
@@ -554,15 +554,15 @@ After `updatedUsers` is computed and saved to `safeStorage`/`systemUsers` state 
 ```
 (`targetUid` is the `uid` field entered in Step 2; `name`, `userFormRole`, `permsToSave` are the same local variables the existing handler already computes.)
 
-- [ ] **Step 4: Update the modal form JSX**
+- [x] **Step 4: Update the modal form JSX**
 
 In the add/edit user form, replace the PIN input field (a 4-digit numeric input) with a text input labeled "🆔 معرّف حساب Firebase (UID)" bound to the new `uid` field — the admin copies this from Firebase Console → Authentication → Users after creating the account there (per the deployment steps already shared).
 
-- [ ] **Step 5: Verify the modal still opens and saves**
+- [x] **Step 5: Verify the modal still opens and saves**
 
 Open `index.html`, log in is not yet fully testable (Task 6 pending), but confirm via DevTools Console that no reference to `pin` remains unresolved: `grep -n "\.pin\b" "index.html"` should return no matches other than incidental unrelated words (double-check any hit manually).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add index.html
@@ -576,21 +576,21 @@ git commit -m "Rework user management to assign Firebase roles instead of genera
 **Files:**
 - Modify: `نظام_ادارة_الملاك_v8.5_cloud.html` (apply the same edits as Tasks 1-5)
 
-- [ ] **Step 1: Diff against `index.html` before starting**
+- [x] **Step 1: Diff against `index.html` before starting**
 
 Run: `diff "index.html" "نظام_ادارة_الملاك_v8.5_cloud.html"`
 Per `HR_Admin_Handoff.md` section 2, this file is documented as "متطابقة مع index.html" (identical to index.html). Confirm the diff shows only the changes from Tasks 1-5 still missing (i.e., this file is currently identical to what `index.html` looked like *before* this plan started) — if there are unrelated differences, stop and flag them instead of overwriting.
 
-- [ ] **Step 2: Apply the same edits**
+- [x] **Step 2: Apply the same edits**
 
 Repeat Tasks 1-5's exact edits (same old/new code blocks) against this file.
 
-- [ ] **Step 3: Verify parity**
+- [x] **Step 3: Verify parity**
 
 Run: `diff "index.html" "نظام_ادارة_الملاك_v8.5_cloud.html"`
 Expected: no output (the two files are byte-identical again, now both with the security hardening applied).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add "نظام_ادارة_الملاك_v8.5_cloud.html"
@@ -606,12 +606,12 @@ git commit -m "Mirror Firebase Auth security hardening into the cloud standalone
 
 This file must stay fully isolated from Firebase (Global Constraints), so it does not get the Auth changes above. But it likely still contains the same hardcoded `'1975'` string, which is a real (if lower-severity) problem: anyone who reads the publicly-hosted `index.html` source learns the same PIN and can try it against any deployment of the offline file too, since the secret is shared across every install rather than being specific to one machine.
 
-- [ ] **Step 1: Confirm the offline file's current PIN handling**
+- [x] **Step 1: Confirm the offline file's current PIN handling**
 
 Run: `grep -n "isAdminPin\|'1975'" "نظام_ادارة_الملاك_v8.5_offline.html"`
 Note the matching lines — expect a structure similar to `index.html`'s original `isAdminPin`.
 
-- [ ] **Step 2: Generate a local-only PIN on first run instead of hardcoding one**
+- [x] **Step 2: Generate a local-only PIN on first run instead of hardcoding one**
 
 Replace the `isAdminPin` function in this file with a version that checks against a PIN stored only in this browser's local storage, generating one on first use:
 ```js
@@ -629,16 +629,16 @@ Replace the `isAdminPin` function in this file with a version that checks agains
             };
 ```
 
-- [ ] **Step 3: Verify the old shared literal is gone**
+- [x] **Step 3: Verify the old shared literal is gone**
 
 Run: `grep -n "'1975'" "نظام_ادارة_الملاك_v8.5_offline.html"`
 Expected: no output.
 
-- [ ] **Step 4: Manual verification**
+- [x] **Step 4: Manual verification**
 
 Open `نظام_ادارة_الملاك_v8.5_offline.html` directly (double-click, `file://`). Trigger an admin-gated action for the first time — confirm the alert box shows a freshly generated 4-digit PIN, and that entering it succeeds. Reload the page and confirm the *same* PIN (now persisted in that browser's local storage) still works, and a wrong PIN is still rejected.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add "نظام_ادارة_الملاك_v8.5_offline.html"
@@ -654,7 +654,7 @@ git commit -m "Replace shared hardcoded offline admin PIN with a per-machine gen
 
 This task requires the user to have already completed the manual Firebase Console steps (enable Email/Password auth, create accounts, set `roles/{uid}`, publish the new Security Rules) and provided: the Web API Key, and each account's `uid`/name/role/permissions.
 
-- [ ] **Step 1: Replace the placeholder key in both files**
+- [x] **Step 1: Replace the placeholder key in both files**
 
 In both `index.html` and `نظام_ادارة_الملاك_v8.5_cloud.html`, replace:
 ```js
@@ -665,27 +665,27 @@ with the real key the user provided, e.g.:
             const FIREBASE_WEB_API_KEY = "AIza...";
 ```
 
-- [ ] **Step 2: Confirm the rules are live (read-only check, no write needed)**
+- [x] **Step 2: Confirm the rules are live (read-only check, no write needed)**
 
 Run: `curl -s -o /dev/null -w "%{http_code}" "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle.json"`
 Expected: `200` (read stays open, per design).
 
-- [ ] **Step 3: Confirm unauthenticated writes are now rejected**
+- [x] **Step 3: Confirm unauthenticated writes are now rejected**
 
 Run: `curl -s -X PUT -d "{\"test\":true}" "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle/__probe.json"`
 Expected: a JSON body containing `"error"` (Firebase returns `403`/permission-denied style error) — NOT a success response. This is the concrete proof the catastrophic "anyone can write" hole from the original design doc is closed.
 
-- [ ] **Step 4: Confirm authenticated login works end-to-end**
+- [x] **Step 4: Confirm authenticated login works end-to-end**
 
 Open `index.html` in a browser, log in with one real admin account and one real operator account (separately). For each: confirm login succeeds, the correct role/permissions are applied (admin sees the user-management button per Task 3/5; operator does not), and a save action (e.g. editing the daily report date) completes without a console error, with the Network tab showing a `200` response from `system_bundle.json?auth=...`.
 
-- [ ] **Step 5: Confirm the audit log is being written**
+- [x] **Step 5: Confirm the audit log is being written**
 
 After the save from Step 4, run:
 `curl -s "https://hr-cooling-default-rtdb.firebaseio.com/audit_log.json?auth=<one of the idTokens from Step 4's Network tab>"`
 Expected: a JSON object containing at least one entry with `action: "save_system_bundle"` and the matching `uid`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add index.html "نظام_ادارة_الملاك_v8.5_cloud.html"

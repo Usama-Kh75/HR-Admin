@@ -874,7 +874,6 @@
                     id: 'usr_1', 
                     name: 'أسامة خليل (مدير النظام)', 
                     role: 'admin', 
-                    pin: '1975', 
                     active: true, 
                     createdAt: '2026-01-01',
                     permissions: { dailyReport: true, staffMaster: true, safety: true, evaluation: true }
@@ -883,7 +882,6 @@
                     id: 'usr_2', 
                     name: 'قاسم صبري', 
                     role: 'operator', 
-                    pin: '2023', 
                     active: true, 
                     createdAt: '2026-01-01',
                     permissions: { dailyReport: true, staffMaster: false, safety: false, evaluation: false }
@@ -892,7 +890,6 @@
                     id: 'usr_3', 
                     name: 'حيدر سعد', 
                     role: 'operator', 
-                    pin: '2020', 
                     active: true, 
                     createdAt: '2026-01-01',
                     permissions: { dailyReport: true, staffMaster: false, safety: false, evaluation: false }
@@ -901,7 +898,6 @@
                     id: 'usr_4', 
                     name: 'مستعرض عام', 
                     role: 'viewer', 
-                    pin: '1234', 
                     active: true, 
                     createdAt: '2026-01-01',
                     permissions: { dailyReport: false, staffMaster: false, safety: false, evaluation: false }
@@ -922,13 +918,14 @@
                                             ? { dailyReport: true, staffMaster: false, safety: false, evaluation: false }
                                             : { dailyReport: false, staffMaster: false, safety: false, evaluation: false }
                                 );
-                                if (u.id === 'usr_2' && (u.pin === '2026' || u.name === 'إداري الشعبة 1')) {
-                                    return { ...u, name: 'قاسم صبري', pin: '2023', permissions: basePerms };
+                                if (u.id === 'usr_2' && u.name === 'إداري الشعبة 1') {
+                                    return { ...u, name: 'قاسم صبري', pin: undefined, permissions: basePerms };
                                 }
-                                if (u.id === 'usr_3' && (u.pin === '11294' || u.name === 'إداري الشعبة 2')) {
-                                    return { ...u, name: 'حيدر سعد', pin: '2020', permissions: basePerms };
+                                if (u.id === 'usr_3' && u.name === 'إداري الشعبة 2') {
+                                    return { ...u, name: 'حيدر سعد', pin: undefined, permissions: basePerms };
                                 }
-                                return { ...u, permissions: basePerms };
+                                // إسقاط أي كلمة مرور مخزّنة محلياً من الإصدارات السابقة
+                                return { ...u, pin: undefined, permissions: basePerms };
                             });
                         }
                     } catch (e) {}
@@ -953,58 +950,35 @@
             const [editingUserId, setEditingUserId] = useState(null);
             const [userFormName, setUserFormName] = useState('');
             const [userFormRole, setUserFormRole] = useState('operator');
-            const [userFormPin, setUserFormPin] = useState('');
+            const [userFormUid, setUserFormUid] = useState('');
             const [userFormPerms, setUserFormPerms] = useState({
                 dailyReport: true,
                 staffMaster: false,
                 safety: false,
                 evaluation: false
             });
-            const [showUserPins, setShowUserPins] = useState(false);
-            const [revealedPinUsers, setRevealedPinUsers] = useState({});
 
             // دالة التحقق من صلاحية التعديل والمزامنة لتبويب معين (Can Edit & Sync Guard)
             const canEdit = (section) => {
                 if (currentUserRole === 'admin') return true;
                 if (currentUserRole !== 'operator') return false;
-                const userObj = systemUsers.find(u => u.name === currentUserName || (u.active !== false && String(u.pin).trim() === loginInputPin));
-                if (!userObj || !userObj.permissions) {
+                // الصلاحيات تأتي من عقدة roles/{uid} السحابية عند تسجيل الدخول (لا من قائمة PIN محلية)
+                if (!currentUserPermissions || Object.keys(currentUserPermissions).length === 0) {
                     return section === 'dailyReport';
                 }
-                return !!userObj.permissions[section];
-            };
-
-            const isAdminPin = (pin) => {
-                if (!pin) return false;
-                const p = String(pin).trim();
-                const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && u.role === 'admin');
-                return !!matchedUser || p === '1975';
-            };
-
-            const isOperatorPin = (pin) => {
-                if (!pin) return false;
-                const p = String(pin).trim();
-                const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && (u.role === 'operator' || u.role === 'admin'));
-                return !!matchedUser;
+                return !!currentUserPermissions[section];
             };
 
             const handleOpenUserManagement = () => {
                 if (currentUserRole === 'admin') {
                     setShowUserManagementModal(true);
                 } else {
-                    const pin = prompt('🔐 فتح إدارة الحسابات والصلاحيات:\\n\\nيرجى إدخال كلمة المرور (PIN) الخاصة بمدير النظام:');
-                    if (isAdminPin(pin)) {
-                        setCurrentUserRole('admin');
-                        const adminUser = systemUsers.find(u => u.role === 'admin') || { name: 'أسامة خليل (مدير النظام)' };
-                        setCurrentUserName(adminUser.name);
-                        setShowUserManagementModal(true);
-                    } else if (pin !== null) {
-                        alert('❌ كلمة المرور غير صحيحة!');
-                    }
+                    alert('❌ هذه النافذة متاحة فقط لمن سجّل دخوله كمدير للنظام.');
                 }
             };
 
             const [currentUserRole, setCurrentUserRole] = useState(null);
+            const [currentUserPermissions, setCurrentUserPermissions] = useState({});
             const [pendingDeletionRequest, setPendingDeletionRequest] = useState(() => {
                 const saved = safeStorage.getItem('pendingDeletionRequest');
                 return saved ? JSON.parse(saved) : null;
@@ -1020,6 +994,107 @@
             const FIREBASE_DB_URL = "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle.json";
             const FIREBASE_BACKUPS_URL = "https://hr-cooling-default-rtdb.firebaseio.com/backups_history";
             const FIREBASE_SESSIONS_URL = "https://hr-cooling-default-rtdb.firebaseio.com/active_sessions";
+
+            const FIREBASE_ROLES_URL = "https://hr-cooling-default-rtdb.firebaseio.com/roles";
+            const FIREBASE_AUDIT_LOG_URL = "https://hr-cooling-default-rtdb.firebaseio.com/audit_log";
+            const FIREBASE_WEB_API_KEY = "AIzaSyAUWG-kTjtwd9VyG6H9s4HueA3Xf1KQdu8";
+            const FIREBASE_AUTH_BASE = "https://identitytoolkit.googleapis.com/v1";
+            const FIREBASE_TOKEN_URL = "https://securetoken.googleapis.com/v1/token";
+
+            const getStoredAuth = () => {
+                try {
+                    const raw = safeStorage.getItem('firebaseAuthSession');
+                    return raw ? JSON.parse(raw) : null;
+                } catch (e) { return null; }
+            };
+
+            const setStoredAuth = (session) => {
+                if (session) {
+                    safeStorage.setItem('firebaseAuthSession', JSON.stringify(session));
+                } else {
+                    safeStorage.removeItem('firebaseAuthSession');
+                }
+            };
+
+            const signInWithEmail = async (email, password) => {
+                const res = await fetch(`${FIREBASE_AUTH_BASE}/accounts:signInWithPassword?key=${FIREBASE_WEB_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, returnSecureToken: true })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    const msg = (data.error && data.error.message) || 'AUTH_FAILED';
+                    throw new Error(msg);
+                }
+                const session = {
+                    idToken: data.idToken,
+                    refreshToken: data.refreshToken,
+                    uid: data.localId,
+                    expiresAt: Date.now() + (parseInt(data.expiresIn, 10) * 1000)
+                };
+                setStoredAuth(session);
+                return session;
+            };
+
+            const refreshIdTokenIfNeeded = async () => {
+                const session = getStoredAuth();
+                if (!session) return null;
+                if (Date.now() < session.expiresAt - 5 * 60 * 1000) {
+                    return session;
+                }
+                try {
+                    const res = await fetch(`${FIREBASE_TOKEN_URL}?key=${FIREBASE_WEB_API_KEY}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `grant_type=refresh_token&refresh_token=${session.refreshToken}`
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                        setStoredAuth(null);
+                        return null;
+                    }
+                    const refreshed = {
+                        idToken: data.id_token,
+                        refreshToken: data.refresh_token,
+                        uid: data.user_id,
+                        expiresAt: Date.now() + (parseInt(data.expires_in, 10) * 1000)
+                    };
+                    setStoredAuth(refreshed);
+                    return refreshed;
+                } catch (e) {
+                    return session;
+                }
+            };
+
+            const signOutFirebase = () => {
+                setStoredAuth(null);
+            };
+
+            const cloudFetch = async (url, options = {}) => {
+                const session = await refreshIdTokenIfNeeded();
+                const separator = url.includes('?') ? '&' : '?';
+                const authedUrl = session ? `${url}${separator}auth=${session.idToken}` : url;
+                return fetch(authedUrl, options);
+            };
+
+            const logAuditEvent = async (action, displayName) => {
+                try {
+                    const session = getStoredAuth();
+                    if (!session) return;
+                    await cloudFetch(`${FIREBASE_AUDIT_LOG_URL}.json`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            uid: session.uid,
+                            displayName: displayName || '',
+                            action,
+                            timestamp: new Date().toISOString()
+                        })
+                    });
+                } catch (e) {}
+            };
+
             const currentSessionIdRef = React.useRef(null);
             const currentUserIdRef = React.useRef(null);
             const [activeSessions, setActiveSessions] = useState({});
@@ -1033,119 +1108,112 @@
             const [isRestoringSnapshot, setIsRestoringSnapshot] = useState(false);
 
             const [loginInputRole, setLoginInputRole] = useState('operator');
-            const [loginInputPin, setLoginInputPin] = useState('');
+            const [loginEmail, setLoginEmail] = useState('');
+            const [loginPassword, setLoginPassword] = useState('');
             const [loginError, setLoginError] = useState('');
 
             const handleLogin = async (e) => {
                 if (e) e.preventDefault();
                 setLoginError('');
-                const inputPin = loginInputPin.trim();
-                if (inputPin === undefined || inputPin === null) return;
+                const email = loginEmail.trim();
+                const password = loginPassword;
+                if (!email || !password) return;
 
                 setIsCheckingLogin(true);
 
-                // جلب أحدث قائمة مستخدمين مباشرة من السحابة لضمان الدقة وتفادي أي كاش محلي
-                let currentUsers = systemUsers;
+                let session;
                 try {
-                    const freshRes = await fetch(FIREBASE_DB_URL + '?t=' + Date.now(), {
-                        method: 'GET',
-                        headers: { 'Cache-Control': 'no-cache' }
-                    });
-                    if (freshRes.ok) {
-                        const freshBundle = await freshRes.json();
-                        if (freshBundle && freshBundle.systemUsersList && Array.isArray(freshBundle.systemUsersList) && freshBundle.systemUsersList.length > 0) {
-                            currentUsers = freshBundle.systemUsersList;
-                            setSystemUsers(freshBundle.systemUsersList);
-                            safeStorage.setItem('systemUsersList', JSON.stringify(freshBundle.systemUsersList));
-                            if (freshBundle.staffData) {
-                                applyDataBundleToState(freshBundle);
+                    session = await signInWithEmail(email, password);
+                } catch (err) {
+                    setIsCheckingLogin(false);
+                    setLoginError('❌ البريد الإلكتروني أو كلمة المرور غير صحيحة!');
+                    return;
+                }
+
+                let roleData = null;
+                try {
+                    const roleRes = await cloudFetch(`${FIREBASE_ROLES_URL}/${session.uid}.json`);
+                    if (roleRes.ok) {
+                        roleData = await roleRes.json();
+                    }
+                } catch (err) {
+                    console.warn("Role fetch error during login:", err);
+                }
+
+                if (!roleData || !roleData.role) {
+                    setIsCheckingLogin(false);
+                    signOutFirebase();
+                    setLoginError('❌ هذا الحساب غير مخوّل للدخول (لا يوجد دور مسند له). راجع مدير النظام.');
+                    return;
+                }
+
+                const targetUser = { id: session.uid, name: roleData.name || email, role: roleData.role, permissions: roleData.permissions || {} };
+
+                // فحص هل الحساب مستخدم حالياً من جهاز آخر (قفل الجلسة الفردية)
+                try {
+                    const sessRes = await fetch(`${FIREBASE_SESSIONS_URL}/${targetUser.id}.json?t=${Date.now()}`);
+                    if (sessRes.ok) {
+                        const sessData = await sessRes.json();
+                        if (sessData && sessData.sessionId && sessData.lastSeen) {
+                            const elapsed = Date.now() - sessData.lastSeen;
+                            if (elapsed < 15000 && sessData.sessionId !== currentSessionIdRef.current) {
+                                setIsCheckingLogin(false);
+                                signOutFirebase();
+                                setLoginError(`⛔ هذا الحساب (${targetUser.name}) قيد الاستخدام حالياً من جهاز آخر!
+لا يمكن لشخصين تسجيل الدخول بنفس الحساب في آن واحد.
+(يرجى تسجيل الخروج من الجهاز الآخر أولاً، أو الانتظار 15 ثانية في حال إغلاق المتصفح).`);
+                                return;
                             }
                         }
                     }
                 } catch (err) {
-                    console.warn("Live user fetch error during login:", err);
+                    console.warn("Session check error:", err);
                 }
 
-                // 1. تحديد المستخدم المستهدف من القائمة السحابية الحية
-                let targetUser = currentUsers.find(u => u.active !== false && String(u.pin).trim() === inputPin);
-                if (!targetUser) {
-                    if (inputPin === '1975') {
-                        targetUser = currentUsers.find(u => u.role === 'admin') || { id: 'usr_1', name: 'أسامة خليل (مدير النظام)', role: 'admin' };
-                    } else if (inputPin === '' || inputPin === '1234') {
-                        targetUser = { id: 'usr_viewer', name: 'مستعرض عام', role: 'viewer' };
-                    }
-                }
-
-                if (!targetUser) {
-                    setIsCheckingLogin(false);
-                    setLoginError('❌ كلمة المرور غير صحيحة!');
-                    return;
-                }
-
-                // 2. فحص هل الحساب مستخدم حالياً من جهاز آخر (قفل الجلسة الفردية لمنع التزامن)
-                if (targetUser.role !== 'viewer') {
-                    try {
-                        const sessRes = await fetch(`${FIREBASE_SESSIONS_URL}/${targetUser.id}.json?t=${Date.now()}`);
-                        if (sessRes.ok) {
-                            const sessData = await sessRes.json();
-                            if (sessData && sessData.sessionId && sessData.lastSeen) {
-                                const elapsed = Date.now() - sessData.lastSeen;
-                                // إذا كانت الجلسة نشطة (خلال آخر 15 ثانية) ومن جلسة مختلفة
-                                if (elapsed < 15000 && sessData.sessionId !== currentSessionIdRef.current) {
-                                    setIsCheckingLogin(false);
-                                    setLoginError(`⛔ هذا الحساب (${targetUser.name}) قيد الاستخدام حالياً من جهاز آخر!\nلا يمكن لشخصين تسجيل الدخول بنفس كلمة المرور في آن واحد.\n(يرجى تسجيل الخروج من الجهاز الآخر أولاً، أو الانتظار 15 ثانية في حال إغلاق المتصفح).`);
-                                    return;
-                                }
-                            }
-                        }
-                    } catch (err) {
-                        console.warn("Session check error:", err);
-                    }
-                }
-
-                // 3. حجز الجلسة الفردية للجهاز الحالي
+                // حجز الجلسة الفردية للجهاز الحالي
                 const newSessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7);
                 currentSessionIdRef.current = newSessionId;
                 currentUserIdRef.current = targetUser.id;
 
-                if (targetUser.role !== 'viewer') {
-                    try {
-                        await fetch(`${FIREBASE_SESSIONS_URL}/${targetUser.id}.json`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                sessionId: newSessionId,
-                                userId: targetUser.id,
-                                name: targetUser.name,
-                                role: targetUser.role,
-                                lastSeen: Date.now()
-                            })
-                        });
-                    } catch (e) {}
-                }
+                try {
+                    await cloudFetch(`${FIREBASE_SESSIONS_URL}/${targetUser.id}.json`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            sessionId: newSessionId,
+                            userId: targetUser.id,
+                            name: targetUser.name,
+                            role: targetUser.role,
+                            lastSeen: Date.now()
+                        })
+                    });
+                } catch (e) {}
 
                 setCurrentUserRole(targetUser.role);
                 setCurrentUserName(targetUser.name);
+                setCurrentUserPermissions(targetUser.permissions);
                 if (targetUser.role === 'operator' || targetUser.role === 'admin') {
                     setDataEntryOperator(targetUser.name.split('(')[0].trim());
                 }
+                logAuditEvent('login', targetUser.name);
                 setIsCheckingLogin(false);
                 setShowWelcome(false);
-                setLoginInputPin('');
+                setLoginEmail('');
+                setLoginPassword('');
                 setShowLoginModal(false);
             };
 
             const handleLogout = () => {
                 if (currentUserIdRef.current) {
                     const uid = currentUserIdRef.current;
-                    try {
-                        fetch(`${FIREBASE_SESSIONS_URL}/${uid}.json`, { method: 'DELETE' });
-                    } catch (e) {}
+                    cloudFetch(`${FIREBASE_SESSIONS_URL}/${uid}.json`, { method: 'DELETE' }).catch(() => {});
                 }
+                signOutFirebase();
                 currentUserIdRef.current = null;
                 currentSessionIdRef.current = null;
                 setCurrentUserRole(null);
                 setCurrentUserName('');
+                setCurrentUserPermissions({});
             };
 
             // فحص نبض الجلسة النشطة وطرد الجلسات في حال تسجيل الدخول من مكان آخر
@@ -1165,7 +1233,7 @@
                                 return;
                             }
                         }
-                        await fetch(`${FIREBASE_SESSIONS_URL}/${uid}.json`, {
+                        await cloudFetch(`${FIREBASE_SESSIONS_URL}/${uid}.json`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1187,7 +1255,10 @@
             React.useEffect(() => {
                 const handleBeforeUnload = () => {
                     if (currentUserIdRef.current) {
-                        fetch(`${FIREBASE_SESSIONS_URL}/${currentUserIdRef.current}.json`, {
+                        // لا يمكن انتظار تجديد التوكن هنا (await يُبطل keepalive)، فنستعمل التوكن المخزَّن مباشرةً
+                        const unloadSession = getStoredAuth();
+                        const unloadUrl = `${FIREBASE_SESSIONS_URL}/${currentUserIdRef.current}.json` + (unloadSession ? `?auth=${unloadSession.idToken}` : '');
+                        fetch(unloadUrl, {
                             method: 'DELETE',
                             keepalive: true
                         });
@@ -1217,7 +1288,7 @@
             const handleForceEvictSession = async (userId, userName) => {
                 if (!confirm(`⚠️ هل أنت متأكد من فك قفل وإنهاء جلسة المستخدم (${userName})؟\nسيتم تحرير الحساب فوراً ليتمكن من تسجيل الدخول من أي جهاز جديد.`)) return;
                 try {
-                    await fetch(`${FIREBASE_SESSIONS_URL}/${userId}.json`, { method: 'DELETE' });
+                    await cloudFetch(`${FIREBASE_SESSIONS_URL}/${userId}.json`, { method: 'DELETE' });
                     setActiveSessions(prev => {
                         const next = { ...prev };
                         delete next[userId];
@@ -1232,19 +1303,19 @@
             const handleSaveUser = (e) => {
                 if (e) e.preventDefault();
                 const name = userFormName.trim();
-                const pin = userFormPin.trim();
+                const targetUid = userFormUid.trim();
                 if (!name) {
                     alert('⚠️ يرجى إدخال اسم المستخدم!');
                     return;
                 }
-                if (!pin) {
-                    alert('⚠️ يرجى إدخال كلمة المرور / رمز الدخول!');
+                if (!targetUid) {
+                    alert('⚠️ يرجى إدخال معرّف حساب Firebase (UID) الخاص بهذا المستخدم! تنسخه من Firebase Console ← Authentication ← Users.');
                     return;
                 }
 
-                const existingWithPin = systemUsers.find(u => String(u.pin).trim() === pin && u.id !== editingUserId);
-                if (existingWithPin) {
-                    alert(`⚠️ كلمة المرور (${pin}) مستخدمة بالفعل للمستخدم (${existingWithPin.name})!\nيرجى اختيار كلمة مرور فريدة.`);
+                const existingWithUid = systemUsers.find(u => String(u.uid || '').trim() === targetUid && u.id !== editingUserId);
+                if (existingWithUid) {
+                    alert(`⚠️ هذا المعرّف (UID) مسند بالفعل للمستخدم (${existingWithUid.name})! كل حساب Firebase يُسند لمستخدم واحد فقط.`);
                     return;
                 }
 
@@ -1256,14 +1327,14 @@
                         : userFormPerms;
 
                 if (editingUserId) {
-                    updatedUsers = systemUsers.map(u => u.id === editingUserId ? { ...u, name, role: userFormRole, pin, permissions: permsToSave } : u);
+                    updatedUsers = systemUsers.map(u => u.id === editingUserId ? { ...u, name, role: userFormRole, uid: targetUid, permissions: permsToSave } : u);
                     alert(`✅ تم تحديث بيانات وصلاحيات المستخدم (${name}) بنجاح!`);
                 } else {
                     const newUser = {
                         id: 'usr_' + Date.now(),
                         name,
                         role: userFormRole,
-                        pin,
+                        uid: targetUid,
                         permissions: permsToSave,
                         active: true,
                         createdAt: new Date().toLocaleDateString('ar-IQ')
@@ -1274,6 +1345,14 @@
 
                 setSystemUsers(updatedUsers);
                 safeStorage.setItem('systemUsersList', JSON.stringify(updatedUsers));
+
+                // مصدر الحقيقة للصلاحيات هو عقدة roles/{uid} السحابية — تُقرأ عند كل تسجيل دخول
+                cloudFetch(`${FIREBASE_ROLES_URL}/${targetUid}.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, role: userFormRole, permissions: permsToSave })
+                }).catch(() => {});
+                logAuditEvent(`update_role:${targetUid}`, currentUserName);
                 pushDataToCloud({
                     staffData: staff,
                     systemUsersList: updatedUsers,
@@ -1293,7 +1372,7 @@
                 setEditingUserId(null);
                 setUserFormName('');
                 setUserFormRole('operator');
-                setUserFormPin('');
+                setUserFormUid('');
                 setUserFormPerms({
                     dailyReport: true,
                     staffMaster: false,
@@ -1306,7 +1385,7 @@
                 setEditingUserId(u.id);
                 setUserFormName(u.name);
                 setUserFormRole(u.role);
-                setUserFormPin(u.pin);
+                setUserFormUid(u.uid || '');
                 setUserFormPerms(u.permissions || {
                     dailyReport: true,
                     staffMaster: u.role === 'admin',
@@ -1319,10 +1398,10 @@
                     if (scrollContainer) {
                         scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
                     }
-                    const pinInput = document.getElementById('userFormPinInput');
-                    if (pinInput) {
-                        pinInput.focus();
-                        pinInput.select();
+                    const uidInput = document.getElementById('userFormUidInput');
+                    if (uidInput) {
+                        uidInput.focus();
+                        uidInput.select();
                     }
                 }, 40);
             };
@@ -1331,7 +1410,7 @@
                 setEditingUserId(null);
                 setUserFormName('');
                 setUserFormRole('operator');
-                setUserFormPin('');
+                setUserFormUid('');
                 setUserFormPerms({
                     dailyReport: true,
                     staffMaster: false,
@@ -1483,13 +1562,14 @@
                     };
 
                     // بث سريع مباشر عبر fetch بدون keepalive (لتفادي حظر المتصفح للحزم الأكبر من 64KB)
-                    const res = await fetch(FIREBASE_DB_URL, {
+                    const res = await cloudFetch(FIREBASE_DB_URL, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(dataPayload)
                     });
                     if (res.ok) {
                         setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
+                        logAuditEvent('save_system_bundle', currentUserName);
                     }
 
                     // 3. حفظ لقطة أرشيفية تلقائية يومية غير قابلة للإلغاء في الأرشيف السحابي (Immutable Daily Snapshot)
@@ -1503,7 +1583,7 @@
                             overridesCount: Object.keys(dataPayload.dailyStatusOverrides || {}).length,
                             bundle: dataPayload
                         };
-                        fetch(`${FIREBASE_BACKUPS_URL}/${todayKey}.json`, {
+                        cloudFetch(`${FIREBASE_BACKUPS_URL}/${todayKey}.json`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(snapshotPayload)
@@ -1578,8 +1658,7 @@
                     alert('⛔ عذراً، ميزة استعادة البيانات مخصصة حصرياً لمدير النظام 👑');
                     return;
                 }
-                const adminPin = prompt(`🔐 يتطلب استرجاع نسخة يوم [${snapshot.date}] إدخال رمز مدير النظام للتأكيد:`);
-                if (!isAdminPin(adminPin)) {
+                if (currentUserRole !== 'admin') {
                     alert('❌ رمز الدخول غير صحيح! تم إلغاء عملية الاستعادة للأمان.');
                     return;
                 }
@@ -4203,8 +4282,7 @@
                     alert('⛔ عذراً، ليس لديك صلاحية حذف منتسبين من الملاك العام!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
                     return;
                 }
-                const adminPin = prompt('🔐 يتطلب حذف الموظف إدخال الرمز السري للإداري:');
-                if (!isAdminPin(adminPin)) {
+                if (currentUserRole !== 'admin') {
                     alert('❌ الرمز السري غير صحيح! تم إلغاء عملية الحذف للحماية.');
                     return;
                 }
@@ -4409,8 +4487,7 @@
                 }
 
                 // مسار مدير النظام المباشر
-                const adminPin = prompt('🔐 تأكيد الحذف المباشر: يرجى إدخال الرمز السري لمدير النظام:');
-                if (!isAdminPin(adminPin)) {
+                if (currentUserRole !== 'admin') {
                     alert('❌ الرمز السري غير صحيح! تم إلغاء العملية للحماية والأمان.');
                     return;
                 }
@@ -5297,13 +5374,8 @@
                                 <>
                                     <button 
                                         onClick={() => {
-                                            const pin = prompt('🔐 تأكيد الموافقة على الحذف: أدخل الرمز السري لمدير النظام:');
-                                            if (isAdminPin(pin)) {
-                                                if (confirm('⚠️ هل توافق رسمياً على تنفيذ طلب الحذف ومسح كافة البيانات سحابياً؟')) {
-                                                    executeCompleteDatabaseWipe();
-                                                }
-                                            } else {
-                                                alert('❌ الرمز السري غير صحيح!');
+                                            if (confirm('⚠️ هل توافق رسمياً على تنفيذ طلب الحذف ومسح كافة البيانات سحابياً؟\n\nهذا الإجراء لا يمكن التراجع عنه.')) {
+                                                executeCompleteDatabaseWipe();
                                             }
                                         }}
                                         className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg transition flex items-center gap-1"
@@ -5376,7 +5448,7 @@
                                             <button
                                                 onClick={handleOpenUserManagement}
                                                 className="px-3.5 py-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-full text-xs font-black shadow transition flex items-center gap-1 cursor-pointer active:scale-95"
-                                                title="إدارة الحسابات والمستخدمين والصلاحيات وكلمات المرور"
+                                                title="إدارة الحسابات والمستخدمين وربطها بحسابات Firebase وتعيين الصلاحيات"
                                             >
                                                 <span>👥</span>
                                                 <span>إدارة الحسابات والمستخدمين</span>
@@ -5778,19 +5850,29 @@
                             </button>
                             <div className="text-4xl mb-2">🔐</div>
                             <h2 className="text-2xl font-black">تسجيل الدخول للنظام</h2>
-                            <p className="text-xs text-blue-200 mt-1">يتعرف النظام آلياً على صفة المستخدم فور إدخال كلمة المرور الخاص به</p>
+                            <p className="text-xs text-blue-200 mt-1">الدخول بحساب موثّق عبر Firebase — تُحدَّد صلاحياتك آلياً حسب الدور المسند لحسابك</p>
                         </div>
 
                         <form onSubmit={handleLogin} className="p-6 space-y-4">
                             <div className="space-y-1.5">
-                                <label className="block text-xs font-black text-slate-700">🔑 أدخل كلمة المرور الخاصة بك:</label>
+                                <label className="block text-xs font-black text-slate-700">📧 البريد الإلكتروني:</label>
+                                <input
+                                    type="email"
+                                    autoFocus
+                                    placeholder="name@example.com"
+                                    value={loginEmail}
+                                    onChange={(e) => setLoginEmail(e.target.value)}
+                                    className="w-full bg-slate-50 border-2 border-slate-300 rounded-xl px-4 py-3 text-center font-bold text-indigo-900 outline-none focus:border-indigo-600 transition shadow-inner"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-black text-slate-700">🔑 كلمة المرور:</label>
                                 <input
                                     type="password"
-                                    autoFocus
-                                    placeholder="••••"
-                                    value={loginInputPin}
-                                    onChange={(e) => setLoginInputPin(e.target.value)}
-                                    className="w-full bg-slate-50 border-2 border-slate-300 rounded-xl px-4 py-3 text-center text-xl font-mono font-bold text-indigo-900 outline-none focus:border-indigo-600 transition shadow-inner"
+                                    placeholder="••••••••"
+                                    value={loginPassword}
+                                    onChange={(e) => setLoginPassword(e.target.value)}
+                                    className="w-full bg-slate-50 border-2 border-slate-300 rounded-xl px-4 py-3 text-center font-bold text-indigo-900 outline-none focus:border-indigo-600 transition shadow-inner"
                                 />
                             </div>
 
@@ -5861,7 +5943,7 @@
                                         <span>إدارة الحسابات وصلاحيات المستخدمين</span>
                                         <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">خاص بالمدير 👑</span>
                                     </h3>
-                                    <p className="text-xs text-slate-300 mt-0.5">إضافة وتعديل المستخدمين وتعيين الصلاحيات وكلمات المرور مع المزامنة السحابية الحية</p>
+                                    <p className="text-xs text-slate-300 mt-0.5">ربط المستخدمين بحسابات Firebase وتعيين أدوارهم وصلاحياتهم مع المزامنة السحابية الحية</p>
                                 </div>
                             </div>
                             <button
@@ -5933,14 +6015,14 @@
                                     </div>
 
                                     <div className="md:col-span-3 space-y-1">
-                                        <label className="block text-[11px] font-black text-slate-700">🔑 كلمة المرور (PIN):</label>
+                                        <label className="block text-[11px] font-black text-slate-700">🆔 معرّف حساب Firebase (UID):</label>
                                         <input
-                                            id="userFormPinInput"
+                                            id="userFormUidInput"
                                             type="text"
-                                            value={userFormPin}
-                                            onChange={(e) => setUserFormPin(e.target.value)}
-                                            placeholder="رمز الدخول..."
-                                            className="w-full bg-white border border-amber-400 focus:border-indigo-600 rounded-xl px-3 py-2 text-xs font-mono font-black text-indigo-900 text-center outline-none focus:ring-2 focus:ring-indigo-500 transition shadow-sm"
+                                            value={userFormUid}
+                                            onChange={(e) => setUserFormUid(e.target.value)}
+                                            placeholder="انسخه من Firebase ← Authentication"
+                                            className="w-full bg-white border border-amber-400 focus:border-indigo-600 rounded-xl px-3 py-2 text-[11px] font-mono font-bold text-indigo-900 text-center outline-none focus:ring-2 focus:ring-indigo-500 transition shadow-sm"
                                         />
                                     </div>
 
@@ -6027,13 +6109,6 @@
                                         <span>📋 قائمة المستخدمين المعرفين بالنظام:</span>
                                         <span className="text-[11px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold">{systemUsers.length} مستخدم</span>
                                     </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowUserPins(!showUserPins)}
-                                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
-                                    >
-                                        <span>{showUserPins ? '🙈 إخفاء كلمات المرور' : '👁️ إظهار كلمات المرور'}</span>
-                                    </button>
                                 </div>
 
                                 <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
@@ -6044,7 +6119,7 @@
                                                     <th className="p-3 font-black text-center w-10">ت</th>
                                                     <th className="p-3 font-black">اسم المستخدم</th>
                                                     <th className="p-3 font-black text-center">الصلاحية</th>
-                                                    <th className="p-3 font-black text-center">كلمة المرور</th>
+                                                    <th className="p-3 font-black text-center">معرّف Firebase (UID)</th>
                                                     <th className="p-3 font-black text-center">الحساب</th>
                                                     <th className="p-3 font-black text-center">الجلسة النشطة</th>
                                                     <th className="p-3 font-black text-center w-28">الإجراءات</th>
@@ -6072,7 +6147,6 @@
                                                     const isOnline = userSess && userSess.lastSeen && (Date.now() - userSess.lastSeen < 15000);
 
                                                     const isCurrentlyEditing = editingUserId === u.id;
-                                                    const isPinRevealed = showUserPins || !!revealedPinUsers[u.id];
 
                                                     return (
                                                         <tr 
@@ -6097,27 +6171,18 @@
                                                             </td>
                                                             <td className="p-3 text-center">{roleBadge}</td>
                                                             <td className="p-3 text-center font-mono font-black text-slate-700">
-                                                                <div className="flex items-center justify-center gap-1">
-                                                                    <span className={`px-2.5 py-1 rounded-lg border font-mono inline-block text-xs font-black transition ${
-                                                                        isPinRevealed 
-                                                                            ? 'bg-amber-100 text-amber-950 border-amber-300 shadow-sm ring-1 ring-amber-400' 
-                                                                            : 'bg-slate-100 text-slate-700 border-slate-200'
-                                                                    }`}>
-                                                                        {isPinRevealed ? u.pin : '••••'}
-                                                                    </span>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setRevealedPinUsers(prev => ({ ...prev, [u.id]: !prev[u.id] }))}
-                                                                        className={`p-1 rounded-lg transition cursor-pointer text-xs ${
-                                                                            revealedPinUsers[u.id] 
-                                                                                ? 'bg-amber-200 text-amber-900 font-bold' 
-                                                                                : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100'
-                                                                        }`}
-                                                                        title={revealedPinUsers[u.id] ? "إخفاء كلمة المرور لهذا المستخدم" : "إظهار كلمة المرور لهذا المستخدم مباشرة هنا"}
+                                                                {u.uid ? (
+                                                                    <span
+                                                                        className="px-2.5 py-1 rounded-lg border bg-slate-100 text-slate-700 border-slate-200 font-mono inline-block text-[10px] font-black"
+                                                                        title={u.uid}
                                                                     >
-                                                                        {revealedPinUsers[u.id] ? '🙈' : '👁️'}
-                                                                    </button>
-                                                                </div>
+                                                                        {String(u.uid).slice(0, 10)}…
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="px-2.5 py-1 rounded-lg border bg-rose-50 text-rose-700 border-rose-200 inline-block text-[10px] font-black">
+                                                                        ⚠️ غير مرتبط
+                                                                    </span>
+                                                                )}
                                                             </td>
                                                             <td className="p-3 text-center">
                                                                 <button
@@ -7174,7 +7239,7 @@
                                                     <span className="w-9 h-9 bg-amber-500 text-white rounded-lg flex items-center justify-center flex-shrink-0 text-base">👥</span>
                                                     <div>
                                                         <div className="font-bold text-amber-900 text-sm">إدارة الحسابات والمستخدمين</div>
-                                                        <div className="text-xs text-amber-700">تعديل الصلاحيات وكلمات المرور والحسابات</div>
+                                                        <div className="text-xs text-amber-700">ربط الحسابات وتعيين الأدوار والصلاحيات</div>
                                                     </div>
                                                 </button>
                                                 <button onClick={exportBackupJSON} className="w-full flex items-center gap-3 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition text-right">
@@ -8745,8 +8810,7 @@
                                                                     {view === 'all' && (
                                                                         <button
                                                                             onClick={() => {
-                                                                                const adminPin = prompt('🔐 يتطلب حذف الموظف إدخال الرمز السري للإداري:');
-                                                                                if (!isAdminPin(adminPin)) {
+                                                                                if (currentUserRole !== 'admin') {
                                                                                     alert('❌ الرمز السري غير صحيح! تم إلغاء عملية الحذف للحماية.');
                                                                                     return;
                                                                                 }
