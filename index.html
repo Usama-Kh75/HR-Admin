@@ -1257,7 +1257,10 @@
             React.useEffect(() => {
                 const handleBeforeUnload = () => {
                     if (currentUserIdRef.current) {
-                        fetch(`${FIREBASE_SESSIONS_URL}/${currentUserIdRef.current}.json`, {
+                        // لا يمكن انتظار تجديد التوكن هنا (await يُبطل keepalive)، فنستعمل التوكن المخزَّن مباشرةً
+                        const unloadSession = getStoredAuth();
+                        const unloadUrl = `${FIREBASE_SESSIONS_URL}/${currentUserIdRef.current}.json` + (unloadSession ? `?auth=${unloadSession.idToken}` : '');
+                        fetch(unloadUrl, {
                             method: 'DELETE',
                             keepalive: true
                         });
@@ -1287,7 +1290,7 @@
             const handleForceEvictSession = async (userId, userName) => {
                 if (!confirm(`⚠️ هل أنت متأكد من فك قفل وإنهاء جلسة المستخدم (${userName})؟\nسيتم تحرير الحساب فوراً ليتمكن من تسجيل الدخول من أي جهاز جديد.`)) return;
                 try {
-                    await fetch(`${FIREBASE_SESSIONS_URL}/${userId}.json`, { method: 'DELETE' });
+                    await cloudFetch(`${FIREBASE_SESSIONS_URL}/${userId}.json`, { method: 'DELETE' });
                     setActiveSessions(prev => {
                         const next = { ...prev };
                         delete next[userId];
@@ -1553,13 +1556,14 @@
                     };
 
                     // بث سريع مباشر عبر fetch بدون keepalive (لتفادي حظر المتصفح للحزم الأكبر من 64KB)
-                    const res = await fetch(FIREBASE_DB_URL, {
+                    const res = await cloudFetch(FIREBASE_DB_URL, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(dataPayload)
                     });
                     if (res.ok) {
                         setCloudSyncStatus({ connected: true, syncing: false, lastSync: new Date().toLocaleTimeString('ar-IQ') });
+                        logAuditEvent('save_system_bundle', currentUserName);
                     }
 
                     // 3. حفظ لقطة أرشيفية تلقائية يومية غير قابلة للإلغاء في الأرشيف السحابي (Immutable Daily Snapshot)
@@ -1573,7 +1577,7 @@
                             overridesCount: Object.keys(dataPayload.dailyStatusOverrides || {}).length,
                             bundle: dataPayload
                         };
-                        fetch(`${FIREBASE_BACKUPS_URL}/${todayKey}.json`, {
+                        cloudFetch(`${FIREBASE_BACKUPS_URL}/${todayKey}.json`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(snapshotPayload)
