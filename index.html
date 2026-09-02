@@ -1020,6 +1020,107 @@
             const FIREBASE_DB_URL = "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle.json";
             const FIREBASE_BACKUPS_URL = "https://hr-cooling-default-rtdb.firebaseio.com/backups_history";
             const FIREBASE_SESSIONS_URL = "https://hr-cooling-default-rtdb.firebaseio.com/active_sessions";
+
+            const FIREBASE_ROLES_URL = "https://hr-cooling-default-rtdb.firebaseio.com/roles";
+            const FIREBASE_AUDIT_LOG_URL = "https://hr-cooling-default-rtdb.firebaseio.com/audit_log";
+            const FIREBASE_WEB_API_KEY = "REPLACE_WITH_FIREBASE_WEB_API_KEY";
+            const FIREBASE_AUTH_BASE = "https://identitytoolkit.googleapis.com/v1";
+            const FIREBASE_TOKEN_URL = "https://securetoken.googleapis.com/v1/token";
+
+            const getStoredAuth = () => {
+                try {
+                    const raw = safeStorage.getItem('firebaseAuthSession');
+                    return raw ? JSON.parse(raw) : null;
+                } catch (e) { return null; }
+            };
+
+            const setStoredAuth = (session) => {
+                if (session) {
+                    safeStorage.setItem('firebaseAuthSession', JSON.stringify(session));
+                } else {
+                    safeStorage.removeItem('firebaseAuthSession');
+                }
+            };
+
+            const signInWithEmail = async (email, password) => {
+                const res = await fetch(`${FIREBASE_AUTH_BASE}/accounts:signInWithPassword?key=${FIREBASE_WEB_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, returnSecureToken: true })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    const msg = (data.error && data.error.message) || 'AUTH_FAILED';
+                    throw new Error(msg);
+                }
+                const session = {
+                    idToken: data.idToken,
+                    refreshToken: data.refreshToken,
+                    uid: data.localId,
+                    expiresAt: Date.now() + (parseInt(data.expiresIn, 10) * 1000)
+                };
+                setStoredAuth(session);
+                return session;
+            };
+
+            const refreshIdTokenIfNeeded = async () => {
+                const session = getStoredAuth();
+                if (!session) return null;
+                if (Date.now() < session.expiresAt - 5 * 60 * 1000) {
+                    return session;
+                }
+                try {
+                    const res = await fetch(`${FIREBASE_TOKEN_URL}?key=${FIREBASE_WEB_API_KEY}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `grant_type=refresh_token&refresh_token=${session.refreshToken}`
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                        setStoredAuth(null);
+                        return null;
+                    }
+                    const refreshed = {
+                        idToken: data.id_token,
+                        refreshToken: data.refresh_token,
+                        uid: data.user_id,
+                        expiresAt: Date.now() + (parseInt(data.expires_in, 10) * 1000)
+                    };
+                    setStoredAuth(refreshed);
+                    return refreshed;
+                } catch (e) {
+                    return session;
+                }
+            };
+
+            const signOutFirebase = () => {
+                setStoredAuth(null);
+            };
+
+            const cloudFetch = async (url, options = {}) => {
+                const session = await refreshIdTokenIfNeeded();
+                const separator = url.includes('?') ? '&' : '?';
+                const authedUrl = session ? `${url}${separator}auth=${session.idToken}` : url;
+                return fetch(authedUrl, options);
+            };
+
+            const logAuditEvent = async (action, displayName) => {
+                try {
+                    const session = getStoredAuth();
+                    if (!session) return;
+                    await cloudFetch(`${FIREBASE_AUDIT_LOG_URL}.json`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            uid: session.uid,
+                            displayName: displayName || '',
+                            action,
+                            timestamp: new Date().toISOString()
+                        })
+                    });
+                } catch (e) {}
+            };
+
             const currentSessionIdRef = React.useRef(null);
             const currentUserIdRef = React.useRef(null);
             const [activeSessions, setActiveSessions] = useState({});
