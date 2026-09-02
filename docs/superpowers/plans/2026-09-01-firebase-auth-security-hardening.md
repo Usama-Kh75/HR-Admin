@@ -654,7 +654,7 @@ git commit -m "Replace shared hardcoded offline admin PIN with a per-machine gen
 
 This task requires the user to have already completed the manual Firebase Console steps (enable Email/Password auth, create accounts, set `roles/{uid}`, publish the new Security Rules) and provided: the Web API Key, and each account's `uid`/name/role/permissions.
 
-- [ ] **Step 1: Replace the placeholder key in both files**
+- [x] **Step 1: Replace the placeholder key in both files**
 
 In both `index.html` and `نظام_ادارة_الملاك_v8.5_cloud.html`, replace:
 ```js
@@ -665,27 +665,27 @@ with the real key the user provided, e.g.:
             const FIREBASE_WEB_API_KEY = "AIza...";
 ```
 
-- [ ] **Step 2: Confirm the rules are live (read-only check, no write needed)**
+- [x] **Step 2: Confirm the rules are live (read-only check, no write needed)**
 
 Run: `curl -s -o /dev/null -w "%{http_code}" "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle.json"`
 Expected: `200` (read stays open, per design).
 
-- [ ] **Step 3: Confirm unauthenticated writes are now rejected**
+- [x] **Step 3: Confirm unauthenticated writes are now rejected**
 
 Run: `curl -s -X PUT -d "{\"test\":true}" "https://hr-cooling-default-rtdb.firebaseio.com/system_bundle/__probe.json"`
 Expected: a JSON body containing `"error"` (Firebase returns `403`/permission-denied style error) — NOT a success response. This is the concrete proof the catastrophic "anyone can write" hole from the original design doc is closed.
 
-- [ ] **Step 4: Confirm authenticated login works end-to-end**
+- [x] **Step 4: Confirm authenticated login works end-to-end**
 
 Open `index.html` in a browser, log in with one real admin account and one real operator account (separately). For each: confirm login succeeds, the correct role/permissions are applied (admin sees the user-management button per Task 3/5; operator does not), and a save action (e.g. editing the daily report date) completes without a console error, with the Network tab showing a `200` response from `system_bundle.json?auth=...`.
 
-- [ ] **Step 5: Confirm the audit log is being written**
+- [x] **Step 5: Confirm the audit log is being written**
 
 After the save from Step 4, run:
 `curl -s "https://hr-cooling-default-rtdb.firebaseio.com/audit_log.json?auth=<one of the idTokens from Step 4's Network tab>"`
 Expected: a JSON object containing at least one entry with `action: "save_system_bundle"` and the matching `uid`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add index.html "نظام_ادارة_الملاك_v8.5_cloud.html"
