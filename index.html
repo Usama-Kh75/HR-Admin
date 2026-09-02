@@ -594,6 +594,11 @@
             });
             const [previewTitle, setPreviewTitle] = useState('');
 
+            // دالة الإشعارات المخصصة للتنبيهات السريعة
+            const showCustomAlert = (msg, type = 'success') => {
+                alert(msg);
+            };
+
             // ===== الموقف اليومي والمطابقة للوجبات =====
             const [unitsSubView, setUnitsSubView] = useState('roster'); // 'roster' (ملاك الوحدات) or 'dailyStatus' (الموقف اليومي)
             const [selectedDailyUnitTab, setSelectedDailyUnitTab] = useState('all');
@@ -854,6 +859,9 @@
                 safeStorage.setItem('shiftAnchorDate', anchorDate);
                 safeStorage.setItem('threeShiftAnchorSquad', threeShiftAnchorSquad);
                 safeStorage.setItem('twoShiftAnchorSquad', twoShiftAnchorSquad);
+                if (!isSyncingRef.current && isInitialCloudLoadCompleteRef.current && staff.length > 0) {
+                    pushDataToCloud();
+                }
             }, [anchorDate, threeShiftAnchorSquad, twoShiftAnchorSquad]);
 
             // ----------------------------------------------------
@@ -978,6 +986,22 @@
                 const p = String(pin).trim();
                 const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && (u.role === 'operator' || u.role === 'admin'));
                 return !!matchedUser;
+            };
+
+            const handleOpenUserManagement = () => {
+                if (currentUserRole === 'admin') {
+                    setShowUserManagementModal(true);
+                } else {
+                    const pin = prompt('🔐 فتح إدارة الحسابات والصلاحيات:\\n\\nيرجى إدخال كلمة المرور (PIN) الخاصة بمدير النظام:');
+                    if (isAdminPin(pin)) {
+                        setCurrentUserRole('admin');
+                        const adminUser = systemUsers.find(u => u.role === 'admin') || { name: 'أسامة خليل (مدير النظام)' };
+                        setCurrentUserName(adminUser.name);
+                        setShowUserManagementModal(true);
+                    } else if (pin !== null) {
+                        alert('❌ كلمة المرور غير صحيحة!');
+                    }
+                }
             };
 
             const [currentUserRole, setCurrentUserRole] = useState(null);
@@ -2237,11 +2261,45 @@
             const handleThreeShiftAnchorChange = (squad) => {
                 setAnchorDate(dailyReportDate);
                 setThreeShiftAnchorSquad(squad);
+                safeStorage.setItem('shiftAnchorDate', dailyReportDate);
+                safeStorage.setItem('threeShiftAnchorSquad', squad);
+                pushDataToCloud({
+                    staffData: staff,
+                    systemUsersList: systemUsers,
+                    officialHolidaysList: officialHolidays,
+                    hourlyLeaveRecords: hourlyLeaveRecords,
+                    overtimeHoursRecords: overtimeHoursRecords,
+                    dailyStatusOverrides: dailyStatusOverrides,
+                    shiftAnchorDate: dailyReportDate,
+                    threeShiftAnchorSquad: squad,
+                    twoShiftAnchorSquad: twoShiftAnchorSquad,
+                    dataEntryOperator: dataEntryOperator,
+                    overtimeSelectedIds: overtimeIds,
+                    lastCloudUpdate: new Date().toISOString(),
+                    pendingDeletionRequest: pendingDeletionRequest
+                });
             };
 
             const handleTwoShiftAnchorChange = (squad) => {
                 setAnchorDate(dailyReportDate);
                 setTwoShiftAnchorSquad(squad);
+                safeStorage.setItem('shiftAnchorDate', dailyReportDate);
+                safeStorage.setItem('twoShiftAnchorSquad', squad);
+                pushDataToCloud({
+                    staffData: staff,
+                    systemUsersList: systemUsers,
+                    officialHolidaysList: officialHolidays,
+                    hourlyLeaveRecords: hourlyLeaveRecords,
+                    overtimeHoursRecords: overtimeHoursRecords,
+                    dailyStatusOverrides: dailyStatusOverrides,
+                    shiftAnchorDate: dailyReportDate,
+                    threeShiftAnchorSquad: threeShiftAnchorSquad,
+                    twoShiftAnchorSquad: squad,
+                    dataEntryOperator: dataEntryOperator,
+                    overtimeSelectedIds: overtimeIds,
+                    lastCloudUpdate: new Date().toISOString(),
+                    pendingDeletionRequest: pendingDeletionRequest
+                });
             };
 
             const dailyStats = useMemo(() => {
@@ -5316,12 +5374,12 @@
                                     {currentUserRole === 'admin' && (
                                         <>
                                             <button
-                                                onClick={() => setShowUserManagementModal(true)}
+                                                onClick={handleOpenUserManagement}
                                                 className="px-3.5 py-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-full text-xs font-black shadow transition flex items-center gap-1 cursor-pointer active:scale-95"
-                                                title="إدارة المستخدمين والصلاحيات وكلمات المرور"
+                                                title="إدارة الحسابات والمستخدمين والصلاحيات وكلمات المرور"
                                             >
                                                 <span>👥</span>
-                                                <span>إدارة المستخدمين والصلاحيات</span>
+                                                <span>إدارة الحسابات والمستخدمين</span>
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -5792,7 +5850,7 @@
 
             {/* نافذة إدارة المستخدمين والصلاحيات الشاملة (User & Role Management Modal) */}
             {showUserManagementModal && (
-                <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+                <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[120] flex items-center justify-center p-3 md:p-6 overflow-y-auto no-print">
                     <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-3xl w-full overflow-hidden animate-fadeInUp my-auto">
                         {/* ترويسة النافذة */}
                         <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 text-white flex justify-between items-center border-b border-indigo-900/50">
@@ -5800,7 +5858,7 @@
                                 <span className="p-2.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-2xl text-2xl">👥</span>
                                 <div>
                                     <h3 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
-                                        <span>إدارة المستخدمين وصلاحيات النظام</span>
+                                        <span>إدارة الحسابات وصلاحيات المستخدمين</span>
                                         <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">خاص بالمدير 👑</span>
                                     </h3>
                                     <p className="text-xs text-slate-300 mt-0.5">إضافة وتعديل المستخدمين وتعيين الصلاحيات وكلمات المرور مع المزامنة السحابية الحية</p>
@@ -7110,6 +7168,13 @@
                                                     <div>
                                                         <div className="font-bold text-blue-800 text-sm">طباعة استمارة موظف</div>
                                                         <div className="text-xs text-blue-600">استمارة ورقية للتعبئة اليدوية</div>
+                                                    </div>
+                                                </button>
+                                                <button onClick={handleOpenUserManagement} className="w-full flex items-center gap-3 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition text-right">
+                                                    <span className="w-9 h-9 bg-amber-500 text-white rounded-lg flex items-center justify-center flex-shrink-0 text-base">👥</span>
+                                                    <div>
+                                                        <div className="font-bold text-amber-900 text-sm">إدارة الحسابات والمستخدمين</div>
+                                                        <div className="text-xs text-amber-700">تعديل الصلاحيات وكلمات المرور والحسابات</div>
                                                     </div>
                                                 </button>
                                                 <button onClick={exportBackupJSON} className="w-full flex items-center gap-3 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition text-right">
@@ -9463,7 +9528,7 @@
             )}
 
             {pendingShiftConfirm && (
-                <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn no-print">
+                <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[120] flex items-center justify-center p-4 animate-fadeIn no-print">
                     <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden animate-scaleUp">
                         <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 p-5 text-white flex items-center gap-3">
                             <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner border border-white/30">
@@ -9490,21 +9555,42 @@
                         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center gap-3">
                             <button
                                 onClick={() => {
+                                    const targetDate = pendingShiftConfirm.date || dailyReportDate;
+                                    setAnchorDate(targetDate);
+                                    safeStorage.setItem('shiftAnchorDate', targetDate);
+
+                                    let newThreeSquad = threeShiftAnchorSquad;
+                                    let newTwoSquad = twoShiftAnchorSquad;
+
                                     if (pendingShiftConfirm.type === '24h') {
-                                        const squads = ['A', 'B', 'C', 'D'];
-                                        const diffDays = getDaysBetweenDates(dailyReportDate, anchorDate);
-                                        const targetIdx = squads.indexOf(pendingShiftConfirm.squad);
-                                        const anchorIdx = (targetIdx - (diffDays % 4) + 4) % 4;
-                                        setThreeShiftAnchorSquad(squads[anchorIdx]);
+                                        newThreeSquad = pendingShiftConfirm.squad;
+                                        setThreeShiftAnchorSquad(newThreeSquad);
+                                        safeStorage.setItem('threeShiftAnchorSquad', newThreeSquad);
                                     } else if (pendingShiftConfirm.type === '12h') {
-                                        const squadToDayMap = { 'A': 1, 'C': 2, 'D': 3, 'B': 4 };
-                                        const dayToSquadMap = { 1: 'A', 2: 'C', 3: 'D', 4: 'B' };
-                                        const diffDays = getDaysBetweenDates(dailyReportDate, anchorDate);
-                                        const targetDay = squadToDayMap[pendingShiftConfirm.squad] || 1;
-                                        const anchorDay = ((targetDay - 1 - diffDays) % 4 + 4) % 4 + 1;
-                                        setTwoShiftAnchorSquad(dayToSquadMap[anchorDay]);
+                                        newTwoSquad = pendingShiftConfirm.squad;
+                                        setTwoShiftAnchorSquad(newTwoSquad);
+                                        safeStorage.setItem('twoShiftAnchorSquad', newTwoSquad);
                                     }
+
+                                    // المزامنة السحابية الفورية لضمان عدم عودة الوجبة السابقة
+                                    pushDataToCloud({
+                                        staffData: staff,
+                                        systemUsersList: systemUsers,
+                                        officialHolidaysList: officialHolidays,
+                                        hourlyLeaveRecords: hourlyLeaveRecords,
+                                        overtimeHoursRecords: overtimeHoursRecords,
+                                        dailyStatusOverrides: dailyStatusOverrides,
+                                        shiftAnchorDate: targetDate,
+                                        threeShiftAnchorSquad: newThreeSquad,
+                                        twoShiftAnchorSquad: newTwoSquad,
+                                        dataEntryOperator: dataEntryOperator,
+                                        overtimeSelectedIds: overtimeIds,
+                                        lastCloudUpdate: new Date().toISOString(),
+                                        pendingDeletionRequest: pendingDeletionRequest
+                                    });
+
                                     setPendingShiftConfirm(null);
+                                    showCustomAlert(`✅ تم تغيير وتثبيت الوجبة (${pendingShiftConfirm.squad}) بنجاح كمرجع أساسي للنظام وتعميمها سحابياً.`, 'success');
                                 }}
                                 className="flex-1 py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-black text-xs md:text-sm shadow-md transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                             >
@@ -9786,6 +9872,7 @@
                                                 <option value="XXL">XXL</option>
                                                 <option value="XXXL">XXXL</option>
                                                 <option value="XXXXL">XXXXL</option>
+                                                <option value="XXXXXL">XXXXXL (5XL)</option>
                                             </select>
                                         </div>
                                         
@@ -9804,6 +9891,7 @@
                                                 <option value="44">44</option>
                                                 <option value="45">45</option>
                                                 <option value="46">46</option>
+                                                <option value="47">47</option>
                                             </select>
                                         </div>
                                         
