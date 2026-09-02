@@ -874,7 +874,6 @@
                     id: 'usr_1', 
                     name: 'أسامة خليل (مدير النظام)', 
                     role: 'admin', 
-                    pin: '1975', 
                     active: true, 
                     createdAt: '2026-01-01',
                     permissions: { dailyReport: true, staffMaster: true, safety: true, evaluation: true }
@@ -883,7 +882,6 @@
                     id: 'usr_2', 
                     name: 'قاسم صبري', 
                     role: 'operator', 
-                    pin: '2023', 
                     active: true, 
                     createdAt: '2026-01-01',
                     permissions: { dailyReport: true, staffMaster: false, safety: false, evaluation: false }
@@ -892,7 +890,6 @@
                     id: 'usr_3', 
                     name: 'حيدر سعد', 
                     role: 'operator', 
-                    pin: '2020', 
                     active: true, 
                     createdAt: '2026-01-01',
                     permissions: { dailyReport: true, staffMaster: false, safety: false, evaluation: false }
@@ -901,7 +898,6 @@
                     id: 'usr_4', 
                     name: 'مستعرض عام', 
                     role: 'viewer', 
-                    pin: '1234', 
                     active: true, 
                     createdAt: '2026-01-01',
                     permissions: { dailyReport: false, staffMaster: false, safety: false, evaluation: false }
@@ -922,13 +918,14 @@
                                             ? { dailyReport: true, staffMaster: false, safety: false, evaluation: false }
                                             : { dailyReport: false, staffMaster: false, safety: false, evaluation: false }
                                 );
-                                if (u.id === 'usr_2' && (u.pin === '2026' || u.name === 'إداري الشعبة 1')) {
-                                    return { ...u, name: 'قاسم صبري', pin: '2023', permissions: basePerms };
+                                if (u.id === 'usr_2' && u.name === 'إداري الشعبة 1') {
+                                    return { ...u, name: 'قاسم صبري', pin: undefined, permissions: basePerms };
                                 }
-                                if (u.id === 'usr_3' && (u.pin === '11294' || u.name === 'إداري الشعبة 2')) {
-                                    return { ...u, name: 'حيدر سعد', pin: '2020', permissions: basePerms };
+                                if (u.id === 'usr_3' && u.name === 'إداري الشعبة 2') {
+                                    return { ...u, name: 'حيدر سعد', pin: undefined, permissions: basePerms };
                                 }
-                                return { ...u, permissions: basePerms };
+                                // إسقاط أي كلمة مرور مخزّنة محلياً من الإصدارات السابقة
+                                return { ...u, pin: undefined, permissions: basePerms };
                             });
                         }
                     } catch (e) {}
@@ -974,33 +971,11 @@
                 return !!currentUserPermissions[section];
             };
 
-            const isAdminPin = (pin) => {
-                if (!pin) return false;
-                const p = String(pin).trim();
-                const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && u.role === 'admin');
-                return !!matchedUser || p === '1975';
-            };
-
-            const isOperatorPin = (pin) => {
-                if (!pin) return false;
-                const p = String(pin).trim();
-                const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && (u.role === 'operator' || u.role === 'admin'));
-                return !!matchedUser;
-            };
-
             const handleOpenUserManagement = () => {
                 if (currentUserRole === 'admin') {
                     setShowUserManagementModal(true);
                 } else {
-                    const pin = prompt('🔐 فتح إدارة الحسابات والصلاحيات:\\n\\nيرجى إدخال كلمة المرور (PIN) الخاصة بمدير النظام:');
-                    if (isAdminPin(pin)) {
-                        setCurrentUserRole('admin');
-                        const adminUser = systemUsers.find(u => u.role === 'admin') || { name: 'أسامة خليل (مدير النظام)' };
-                        setCurrentUserName(adminUser.name);
-                        setShowUserManagementModal(true);
-                    } else if (pin !== null) {
-                        alert('❌ كلمة المرور غير صحيحة!');
-                    }
+                    alert('❌ هذه النافذة متاحة فقط لمن سجّل دخوله كمدير للنظام.');
                 }
             };
 
@@ -1673,8 +1648,7 @@
                     alert('⛔ عذراً، ميزة استعادة البيانات مخصصة حصرياً لمدير النظام 👑');
                     return;
                 }
-                const adminPin = prompt(`🔐 يتطلب استرجاع نسخة يوم [${snapshot.date}] إدخال رمز مدير النظام للتأكيد:`);
-                if (!isAdminPin(adminPin)) {
+                if (currentUserRole !== 'admin') {
                     alert('❌ رمز الدخول غير صحيح! تم إلغاء عملية الاستعادة للأمان.');
                     return;
                 }
@@ -4298,8 +4272,7 @@
                     alert('⛔ عذراً، ليس لديك صلاحية حذف منتسبين من الملاك العام!\nتم منحك صلاحية العرض والاطلاع والطباعة فقط.');
                     return;
                 }
-                const adminPin = prompt('🔐 يتطلب حذف الموظف إدخال الرمز السري للإداري:');
-                if (!isAdminPin(adminPin)) {
+                if (currentUserRole !== 'admin') {
                     alert('❌ الرمز السري غير صحيح! تم إلغاء عملية الحذف للحماية.');
                     return;
                 }
@@ -4504,8 +4477,7 @@
                 }
 
                 // مسار مدير النظام المباشر
-                const adminPin = prompt('🔐 تأكيد الحذف المباشر: يرجى إدخال الرمز السري لمدير النظام:');
-                if (!isAdminPin(adminPin)) {
+                if (currentUserRole !== 'admin') {
                     alert('❌ الرمز السري غير صحيح! تم إلغاء العملية للحماية والأمان.');
                     return;
                 }
@@ -5392,13 +5364,8 @@
                                 <>
                                     <button 
                                         onClick={() => {
-                                            const pin = prompt('🔐 تأكيد الموافقة على الحذف: أدخل الرمز السري لمدير النظام:');
-                                            if (isAdminPin(pin)) {
-                                                if (confirm('⚠️ هل توافق رسمياً على تنفيذ طلب الحذف ومسح كافة البيانات سحابياً؟')) {
-                                                    executeCompleteDatabaseWipe();
-                                                }
-                                            } else {
-                                                alert('❌ الرمز السري غير صحيح!');
+                                            if (confirm('⚠️ هل توافق رسمياً على تنفيذ طلب الحذف ومسح كافة البيانات سحابياً؟\n\nهذا الإجراء لا يمكن التراجع عنه.')) {
+                                                executeCompleteDatabaseWipe();
                                             }
                                         }}
                                         className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg transition flex items-center gap-1"
@@ -8850,8 +8817,7 @@
                                                                     {view === 'all' && (
                                                                         <button
                                                                             onClick={() => {
-                                                                                const adminPin = prompt('🔐 يتطلب حذف الموظف إدخال الرمز السري للإداري:');
-                                                                                if (!isAdminPin(adminPin)) {
+                                                                                if (currentUserRole !== 'admin') {
                                                                                     alert('❌ الرمز السري غير صحيح! تم إلغاء عملية الحذف للحماية.');
                                                                                     return;
                                                                                 }
