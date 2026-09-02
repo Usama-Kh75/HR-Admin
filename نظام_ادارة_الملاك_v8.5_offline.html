@@ -874,7 +874,6 @@
                     id: 'usr_1', 
                     name: 'أسامة خليل (مدير النظام)', 
                     role: 'admin', 
-                    pin: '1975', 
                     active: true, 
                     createdAt: '2026-01-01',
                     permissions: { dailyReport: true, staffMaster: true, safety: true, evaluation: true }
@@ -974,11 +973,23 @@
                 return !!userObj.permissions[section];
             };
 
+            // رمز مدير محلي خاص بهذا الجهاز وحده — لا يوجد رمز مشترك بين النسخ (النسخة الأوفلاين معزولة تماماً)
+            const getLocalOfflineAdminPin = () => {
+                let localAdminPin = safeStorage.getItem('localOfflineAdminPin');
+                if (!localAdminPin) {
+                    localAdminPin = String(Math.floor(1000 + Math.random() * 9000));
+                    safeStorage.setItem('localOfflineAdminPin', localAdminPin);
+                    alert('🔐 تم إنشاء رمز مدير محلي جديد لهذا الجهاز لأول مرة:' + String.fromCharCode(10,10) + localAdminPin + String.fromCharCode(10,10) + 'احتفظ به في مكان آمن — لن يظهر مرة أخرى تلقائياً.');
+                }
+                return localAdminPin;
+            };
+
             const isAdminPin = (pin) => {
                 if (!pin) return false;
                 const p = String(pin).trim();
-                const matchedUser = systemUsers.find(u => u.active !== false && String(u.pin).trim() === p && u.role === 'admin');
-                return !!matchedUser || p === '1975';
+                const matchedUser = systemUsers.find(u => u.active !== false && u.pin && String(u.pin).trim() === p && u.role === 'admin');
+                if (matchedUser) return true;
+                return p === getLocalOfflineAdminPin();
             };
 
             const isOperatorPin = (pin) => {
@@ -1069,7 +1080,7 @@
                 // 1. تحديد المستخدم المستهدف من القائمة السحابية الحية
                 let targetUser = currentUsers.find(u => u.active !== false && String(u.pin).trim() === inputPin);
                 if (!targetUser) {
-                    if (inputPin === '1975') {
+                    if (inputPin === getLocalOfflineAdminPin()) {
                         targetUser = currentUsers.find(u => u.role === 'admin') || { id: 'usr_1', name: 'أسامة خليل (مدير النظام)', role: 'admin' };
                     } else if (inputPin === '' || inputPin === '1234') {
                         targetUser = { id: 'usr_viewer', name: 'مستعرض عام', role: 'viewer' };
