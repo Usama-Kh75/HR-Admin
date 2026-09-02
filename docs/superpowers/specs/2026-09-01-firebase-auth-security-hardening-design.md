@@ -26,22 +26,29 @@
 ```json
 {
   "rules": {
-    "system_bundle": { ".read": true, ".write": "auth != null" },
+    "system_bundle": {
+      ".read": true,
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists()"
+    },
+    "active_sessions": {
+      ".read": true,
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists()"
+    },
     "backups_history": {
       ".read": "auth != null && root.child('roles').child(auth.uid).child('role').val() === 'admin'",
-      ".write": "auth != null"
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists()"
     },
-    "active_sessions": { ".read": true, ".write": "auth != null" },
     "roles": { ".read": "auth != null", ".write": false },
     "audit_log": {
       ".read": "auth != null && root.child('roles').child(auth.uid).child('role').val() === 'admin'",
-      ".write": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists()",
       ".indexOn": "timestamp"
     }
   }
 }
 ```
 
+- **تصحيح جوهري (2026-09-02):** الشرط ليس `auth != null` بل وجود سجل في `roles` أيضاً. السبب: تفعيل Email/Password يفتح مسار `accounts:signUp` العلني، فأي زائر يملك مفتاح الويب (وهو معرّف عام ظاهر في الكود) يستطيع إنشاء حساب لنفسه عبر `curl` دون المرور بأي واجهة. ادّعاء هذه الوثيقة بأن «غياب واجهة التسجيل الذاتي يمنع ذلك» كان خاطئاً. اشتراط وجود سجل في `roles` — وهي عقدة `.write: false` لا يستطيع التطبيق الكتابة عليها — يغلق هذا المسار نهائياً.
 - عقدة `roles/{uid}` تُدار **يدوياً فقط** من لوحة تحكم Firebase أو عبر Firebase Console Rules Playground (لا واجهة كتابة لها من التطبيق) — بديل نظام `systemUsers[].pin`.
 - قراءة `backups_history` (اللقطات اليومية الكاملة) و`audit_log` (سجل من عدّل ماذا) مقصورة على من دوره `admin` فقط — تطابقاً مع كون هذه بيانات إدارية حساسة، بخلاف `system_bundle` المفتوح للقراءة العامة بقرار تصميمي متعمَّد.
 - **نطاق مقصود:** أي مستخدم مسجّل دخوله (له سجل في `roles`) يمكنه الكتابة في `system_bundle` بأكمله. القيود الدقيقة لكل تبويب (RBAC حسب الصلاحيات: dailyReport/staffMaster/safety/evaluation) تبقى مطبَّقة في واجهة المستخدم كما هي الآن — هذا يغلق الثغرة الكارثية (كتابة عامة من الإنترنت) دون تغيير نموذج RBAC الحالي بين المشغّلين الموثوقين أنفسهم. تحسين القواعد لتكون على مستوى الحقل الواحد يبقى تحسيناً مستقبلياً منفصلاً إن رغب المستخدم لاحقاً.
