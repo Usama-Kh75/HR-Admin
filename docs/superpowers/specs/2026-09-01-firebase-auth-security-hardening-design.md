@@ -38,7 +38,10 @@
       ".read": "auth != null && root.child('roles').child(auth.uid).child('role').val() === 'admin'",
       ".write": "auth != null && root.child('roles').child(auth.uid).exists()"
     },
-    "roles": { ".read": "auth != null", ".write": false },
+    "roles": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('roles').child(auth.uid).child('role').val() === 'admin'"
+    },
     "audit_log": {
       ".read": "auth != null && root.child('roles').child(auth.uid).child('role').val() === 'admin'",
       ".write": "auth != null && root.child('roles').child(auth.uid).exists()",
@@ -48,6 +51,7 @@
 }
 ```
 
+- **تصحيح ثانٍ (2026-09-02):** كانت `roles` بحالة `.write: false` بينما نافذة إدارة الحسابات (البند 3.2) تكتب عليها — تناقض داخل الوثيقة نفسها كان ينتج فشلاً صامتاً: تظهر رسالة نجاح بينما الدور لا يصل إلى Firebase. الكتابة صارت مسموحة **للمدير وحده** (يتحقق منها الخادم من `roles/{uid}/role`)، وهذا لا يوسّع صلاحيات المدير إذ يملكها أصلاً، بينما تبقى الكتابة ممنوعة على غيره فلا يستطيع أحد منح نفسه دوراً.
 - **تصحيح جوهري (2026-09-02):** الشرط ليس `auth != null` بل وجود سجل في `roles` أيضاً. السبب: تفعيل Email/Password يفتح مسار `accounts:signUp` العلني، فأي زائر يملك مفتاح الويب (وهو معرّف عام ظاهر في الكود) يستطيع إنشاء حساب لنفسه عبر `curl` دون المرور بأي واجهة. ادّعاء هذه الوثيقة بأن «غياب واجهة التسجيل الذاتي يمنع ذلك» كان خاطئاً. اشتراط وجود سجل في `roles` — وهي عقدة `.write: false` لا يستطيع التطبيق الكتابة عليها — يغلق هذا المسار نهائياً.
 - عقدة `roles/{uid}` تُدار **يدوياً فقط** من لوحة تحكم Firebase أو عبر Firebase Console Rules Playground (لا واجهة كتابة لها من التطبيق) — بديل نظام `systemUsers[].pin`.
 - قراءة `backups_history` (اللقطات اليومية الكاملة) و`audit_log` (سجل من عدّل ماذا) مقصورة على من دوره `admin` فقط — تطابقاً مع كون هذه بيانات إدارية حساسة، بخلاف `system_bundle` المفتوح للقراءة العامة بقرار تصميمي متعمَّد.
